@@ -25,7 +25,7 @@ const Testimoni = () => {
               <button
                 onClick={() => instanceRef.current?.prev()}
                 aria-label="Previous slide"
-                className="rounded-full border border-rose-600 p-3 text-rose-600 transition hover:bg-rose-600 hover:text-white"
+                className="rounded-full border border-blue-600 p-3 text-blue-600 transition hover:bg-blue-600 hover:text-white"
               >
                 &#8592;
               </button>
@@ -33,7 +33,7 @@ const Testimoni = () => {
               <button
                 onClick={() => instanceRef.current?.next()}
                 aria-label="Next slide"
-                className="rounded-full border border-rose-600 p-3 text-rose-600 transition hover:bg-rose-600 hover:text-white"
+                className="rounded-full border border-blue-600 p-3 text-blue-600 transition hover:bg-blue-600 hover:text-white"
               >
                 &#8594;
               </button>
@@ -44,7 +44,7 @@ const Testimoni = () => {
             <div className="keen-slider__slide">
               <blockquote className="flex flex-col justify-between bg-white p-6 shadow-lg sm:p-8 lg:p-16">
                 <div>
-                  <p className="text-2xl font-bold text-rose-600 sm:text-3xl">
+                  <p className="text-2xl font-bold text-black sm:text-3xl">
                     Stayin' Alive
                   </p>
                   <p className="mt-4 leading-relaxed text-gray-700">
@@ -61,7 +61,7 @@ const Testimoni = () => {
             <div className="keen-slider__slide">
               <blockquote className="flex flex-col justify-between bg-white p-6 shadow-lg sm:p-8 lg:p-16">
                 <div>
-                  <p className="text-2xl font-bold text-rose-600 sm:text-3xl">
+                  <p className="text-2xl font-bold text-black sm:text-3xl">
                     Amazing Service!
                   </p>
                   <p className="mt-4 leading-relaxed text-gray-700">
