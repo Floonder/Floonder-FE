@@ -111,21 +111,96 @@ const CubeIcon = () => (
   </svg>
 );
 
+const ChevronDownIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="6 9 12 15 18 9"></polyline>
+  </svg>
+);
+
 function Maps() {
   const MAP_SERVICE_KEY = import.meta.env.VITE_MAP_SERVICE_KEY;
   const mapContainer = useRef(null);
   const map = useRef(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [is3DMode, setIs3DMode] = useState(true);
+  const [riverData, setRiverData] = useState([]);
+  const [showRivers, setShowRivers] = useState(false);
+  const [administrativeData, setAdministrativeData] = useState([]);
+  const [showAdministrativeBoundaries, setShowAdministrativeBoundaries] =
+    useState(false);
+  const [rainfallData, setRainfallData] = useState([]);
+  const [showRainfall, setShowRainfall] = useState(false);
 
   // Map style state and options
-  const [mapStyle, setMapStyle] = useState("street"); // Default style
+  const [mapStyle, setMapStyle] = useState("dark"); // Default style
   const mapStyles = {
+    dark: `https://basemap.mapid.io/styles/dark/style.json?key=${MAP_SERVICE_KEY}`,
     street: `https://basemap.mapid.io/styles/street-new-generation/style.json?key=${MAP_SERVICE_KEY}`,
     satellite: `https://basemap.mapid.io/styles/satellite/style.json?key=${MAP_SERVICE_KEY}`,
-    dark: `https://basemap.mapid.io/styles/dark/style.json?key=${MAP_SERVICE_KEY}`,
     light: `https://basemap.mapid.io/styles/light/style.json?key=${MAP_SERVICE_KEY}`,
   };
+
+  useEffect(() => {
+    const fetchRiverData = async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_HOST_API}/api/public/gis/sungai`,
+          {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP Error! Status: ${response.status}`);
+        }
+
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          const text = await response.text();
+          console.error("Unexpected response content:", text);
+          throw new Error("Response is not JSON");
+        }
+
+        const data = await response.json();
+
+        // Ambil data dari `results.features`
+        const riverFeatures = data.results?.features;
+
+        if (!Array.isArray(riverFeatures)) {
+          throw new Error("Expected an array of river features");
+        }
+
+        const validRiverData = riverFeatures.filter(
+          (river) =>
+            river.type === "Feature" &&
+            river.geometry &&
+            river.geometry.type === "MultiLineString" &&
+            river.geometry.coordinates
+        );
+
+        setRiverData(validRiverData);
+        console.log("Fetched River Data:", validRiverData);
+      } catch (error) {
+        console.error("Error fetching river data:", error.message);
+      }
+    };
+
+    fetchRiverData();
+  }, []);
 
   // Initialize map
   useEffect(() => {
@@ -153,6 +228,269 @@ function Maps() {
     return () => map.current?.remove();
   }, []);
 
+  // Handle river data rendering
+  useEffect(() => {
+    if (map.current && riverData.length > 0 && showRivers) {
+      // Remove existing river layer if it exists
+      if (map.current.getSource("rivers")) {
+        map.current.removeLayer("river-lines");
+        map.current.removeSource("rivers");
+      }
+
+      // Add river data as a source
+      map.current.addSource("rivers", {
+        type: "geojson",
+        data: {
+          type: "FeatureCollection",
+          features: riverData,
+        },
+      });
+
+      // Add river lines layer
+      map.current.addLayer({
+        id: "river-lines",
+        type: "line",
+        source: "rivers",
+        paint: {
+          "line-color": "#4169E1",
+          "line-width": 3,
+          "line-opacity": 0.7,
+        },
+      });
+    } else if (map.current && map.current.getSource("rivers")) {
+      // Remove river layer if rivers are hidden
+      map.current.removeLayer("river-lines");
+      map.current.removeSource("rivers");
+    }
+  }, [riverData, showRivers]);
+
+  useEffect(() => {
+    const fetchAdministrativeData = async () => {
+      try {
+        const response = await fetch(
+          `${
+            import.meta.env.VITE_HOST_API
+          }/api/public/gis/wilayah-administrasi`,
+          {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP Error! Status: ${response.status}`);
+        }
+
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          const text = await response.text();
+          console.error("Unexpected response content:", text);
+          throw new Error("Response is not JSON");
+        }
+
+        const data = await response.json();
+
+        // Ambil data dari `results.features`
+        const administrativeFeatures = data.results?.features;
+
+        if (!Array.isArray(administrativeFeatures)) {
+          throw new Error("Expected an array of administrative features");
+        }
+
+        const validAdministrativeData = administrativeFeatures.filter(
+          (feature) =>
+            feature.type === "Feature" &&
+            feature.geometry &&
+            feature.geometry.type === "MultiPolygon" &&
+            feature.geometry.coordinates
+        );
+
+        setAdministrativeData(validAdministrativeData);
+        console.log("Fetched Administrative Data:", validAdministrativeData);
+      } catch (error) {
+        console.error("Error fetching administrative data:", error.message);
+      }
+    };
+
+    fetchAdministrativeData();
+  }, []);
+
+  useEffect(() => {
+    if (
+      map.current &&
+      administrativeData.length > 0 &&
+      showAdministrativeBoundaries
+    ) {
+      // Remove existing administrative boundaries layer if it exists
+      if (map.current.getSource("administrative-boundaries")) {
+        map.current.removeLayer("administrative-boundaries-fill");
+        map.current.removeLayer("administrative-boundaries-line");
+        map.current.removeSource("administrative-boundaries");
+      }
+
+      // Add administrative boundaries as a source
+      map.current.addSource("administrative-boundaries", {
+        type: "geojson",
+        data: {
+          type: "FeatureCollection",
+          features: administrativeData,
+        },
+      });
+
+      // Add administrative boundaries fill layer
+      map.current.addLayer({
+        id: "administrative-boundaries-fill",
+        type: "fill",
+        source: "administrative-boundaries",
+        paint: {
+          "fill-color": "#4169E1", // Royal Blue
+          "fill-opacity": 0.2,
+        },
+      });
+
+      // Add administrative boundaries line layer
+      map.current.addLayer({
+        id: "administrative-boundaries-line",
+        type: "line",
+        source: "administrative-boundaries",
+        paint: {
+          "line-color": "#4169E1", // Royal Blue
+          "line-width": 2,
+          "line-opacity": 0.7,
+        },
+      });
+    } else if (
+      map.current &&
+      map.current.getSource("administrative-boundaries")
+    ) {
+      // Remove administrative boundaries layers if hidden
+      map.current.removeLayer("administrative-boundaries-fill");
+      map.current.removeLayer("administrative-boundaries-line");
+      map.current.removeSource("administrative-boundaries");
+    }
+  }, [administrativeData, showAdministrativeBoundaries]);
+
+  useEffect(() => {
+    const fetchRainfallData = async () => {
+      try {
+        const response = await fetch(
+          `${
+            import.meta.env.VITE_HOST_API
+          }/api/public/gis/curah-hujan?limit=20`,
+          {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP Error! Status: ${response.status}`);
+        }
+
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          const text = await response.text();
+          console.error("Unexpected response content:", text);
+          throw new Error("Response is not JSON");
+        }
+
+        const data = await response.json();
+
+        // Ambil data dari `results.features`
+        const rainfallFeatures = data.results?.features;
+
+        if (!Array.isArray(rainfallFeatures)) {
+          throw new Error("Expected an array of rainfall features");
+        }
+
+        const validRainfallData = rainfallFeatures.filter(
+          (feature) =>
+            feature.type === "Feature" &&
+            feature.geometry &&
+            feature.geometry.type === "Polygon" &&
+            feature.geometry.coordinates
+        );
+
+        setRainfallData(validRainfallData);
+        console.log("Fetched Rainfall Data:", validRainfallData);
+      } catch (error) {
+        console.error("Error fetching rainfall data:", error.message);
+      }
+    };
+
+    fetchRainfallData();
+  }, []);
+
+  useEffect(() => {
+    console.log("Rainfall Data:", rainfallData);
+    console.log("Show Rainfall:", showRainfall);
+    if (map.current && rainfallData.length > 0 && showRainfall) {
+      console.log("Attempting to add rainfall layer");
+      if (map.current.getSource("rainfall")) {
+        map.current.removeLayer("rainfall-fill");
+        map.current.removeLayer("rainfall-line");
+        map.current.removeSource("rainfall");
+      }
+
+      // Add rainfall data as a source
+      map.current.addSource("rainfall", {
+        type: "geojson",
+        data: {
+          type: "FeatureCollection",
+          features: rainfallData,
+        },
+      });
+
+      // Add rainfall fill layer with color based on gridcode (intensity)
+      map.current.addLayer({
+        id: "rainfall-fill",
+        type: "fill",
+        source: "rainfall",
+        paint: {
+          "fill-color": [
+            "interpolate",
+            ["linear"],
+            ["get", "gridcode"],
+            1,
+            "#90EE90", // Light green for low rainfall
+            2,
+            "#32CD32", // Lime green for moderate rainfall
+            3,
+            "#228B22", // Forest green for high rainfall
+            4,
+            "#006400", // Dark green for very high rainfall
+            5,
+            "#013220", // Darkest green for extreme rainfall
+          ],
+          "fill-opacity": 0.5,
+        },
+      });
+
+      // Add rainfall boundaries layer
+      map.current.addLayer({
+        id: "rainfall-line",
+        type: "line",
+        source: "rainfall",
+        paint: {
+          "line-color": "#000000",
+          "line-width": 1,
+          "line-opacity": 0.5,
+        },
+      });
+    } else if (map.current && map.current.getSource("rainfall")) {
+      // Remove rainfall layers if hidden
+      map.current.removeLayer("rainfall-fill");
+      map.current.removeLayer("rainfall-line");
+      map.current.removeSource("rainfall");
+    }
+  }, [rainfallData, showRainfall]);
+
   // Handle 2D/3D toggle
   useEffect(() => {
     if (map.current) {
@@ -176,20 +514,20 @@ function Maps() {
   };
 
   return (
-    <>
-      <Navbar />
+    <div className="flex flex-col h-screen">
+      <Navbar className="z-20" />
 
       {/* Map container */}
       <div className="relative w-full h-screen">
         <div ref={mapContainer} className="w-full h-full" />
 
         {/* Search bar */}
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4 z-10">
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4 z-10 mt-14">
           <form onSubmit={handleSearch} className="relative">
             <input
               type="text"
               placeholder="Search location..."
-              className="w-full px-4 py-2 pr-10 rounded-lg shadow-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 pr-10 rounded-lg shadow-lg border text-white border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -229,6 +567,72 @@ function Maps() {
             <ZoomOutIcon />
           </button>
         </div>
+        {/* Toggle show River, Curah hujan dan kecamatan */}
+        <div className="absolute bottom-50 left-4 z-10 bg-white rounded-lg shadow-lg p-2">
+          <div className="flex items-center space-x-2 px-2 py-1 border-b border-gray-200">
+            <ChevronDownIcon />
+            <span className="font-medium">Layers</span>
+          </div>
+          <div className="mt-2 space-y-1">
+            <div className="flex items-center px-2 py-1 hover:bg-gray-100 rounded cursor-pointer">
+              <input
+                type="checkbox"
+                id="river"
+                checked={showRivers}
+                onChange={() => setShowRivers(!showRivers)}
+                className="mr-2 cursor-pointer"
+              />
+              <label
+                htmlFor="river"
+                className={`text-sm cursor-pointer ${
+                  showRivers ? "text-blue-500 font-bold" : "text-black"
+                }`}
+              >
+                {showRivers ? "Hide Rivers" : "Show Rivers"}
+              </label>
+            </div>
+            <div className="flex items-center px-2 py-1 hover:bg-gray-100 rounded cursor-pointer">
+              <input
+                type="checkbox"
+                id="rainfall"
+                checked={showRainfall}
+                onChange={() => setShowRainfall(!showRainfall)}
+                className="mr-2 cursor-pointer"
+              />
+              <label
+                htmlFor="rainfall"
+                className={`text-sm cursor-pointer ${
+                  showRainfall ? "text-blue-500 font-bold" : "text-black"
+                }`}
+              >
+                {showRainfall ? "Hide Rainfall" : "Show Rainfall"}
+              </label>
+            </div>
+            <div className="flex items-center px-2 py-1 hover:bg-gray-100 rounded cursor-pointer">
+              <input
+                type="checkbox"
+                id="district"
+                checked={showAdministrativeBoundaries}
+                onChange={() =>
+                  setShowAdministrativeBoundaries(!showAdministrativeBoundaries)
+                }
+                className="mr-2 cursor-pointer"
+              />
+              <label
+                htmlFor="district"
+                className={`text-sm cursor-pointer ${
+                  showAdministrativeBoundaries
+                    ? "text-blue-500 font-bold"
+                    : "text-black"
+                }`}
+              >
+                {showAdministrativeBoundaries
+                  ? "Hide Boundaries"
+                  : "Show Boundaries"}
+              </label>
+            </div>
+          </div>
+        </div>
 
         {/* Map Styles panel */}
         <div className="absolute bottom-4 left-4 z-10 bg-white rounded-lg shadow-lg p-2">
@@ -256,7 +660,7 @@ function Maps() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
