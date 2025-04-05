@@ -140,6 +140,8 @@ function Maps() {
     useState(false);
   const [rainfallData, setRainfallData] = useState([]);
   const [showRainfall, setShowRainfall] = useState(false);
+  const [predictionData, setPredictionData] = useState([]);
+  const [showPrediction, setShowPrediction] = useState(false);
 
   // Map style state and options
   const [mapStyle, setMapStyle] = useState("dark"); // Default style
@@ -207,7 +209,7 @@ function Maps() {
     map.current = new maplibregl.Map({
       container: mapContainer.current,
       style: mapStyles[mapStyle],
-      center: [107.6098, -6.9149], // Bandung
+      center: [107.6098, -6.9149],
       zoom: 15.5,
       pitch: is3DMode ? 60 : 0,
     });
@@ -215,7 +217,6 @@ function Maps() {
     map.current.on("load", () => {
       console.log("map loaded");
 
-      // Add navigation control (zoom buttons)
       map.current.addControl(
         new maplibregl.NavigationControl(),
         "bottom-right"
@@ -346,7 +347,7 @@ function Maps() {
         type: "fill",
         source: "administrative-boundaries",
         paint: {
-          "fill-color": "#4169E1", // Royal Blue
+          "fill-color": "#4169E1",
           "fill-opacity": 0.2,
         },
       });
@@ -357,7 +358,7 @@ function Maps() {
         type: "line",
         source: "administrative-boundaries",
         paint: {
-          "line-color": "#4169E1", // Royal Blue
+          "line-color": "#4169E1",
           "line-width": 2,
           "line-opacity": 0.7,
         },
@@ -447,7 +448,6 @@ function Maps() {
         },
       });
 
-      // Add rainfall fill layer with color based on gridcode (intensity)
       map.current.addLayer({
         id: "rainfall-fill",
         type: "fill",
@@ -491,6 +491,111 @@ function Maps() {
     }
   }, [rainfallData, showRainfall]);
 
+  useEffect(() => {
+    const fetchPredictionData = async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_HOST_API}/api/public/gis/prediksi`,
+          {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP Error! Status: ${response.status}`);
+        }
+
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          const text = await response.text();
+          console.error("Unexpected response content:", text);
+          throw new Error("Response is not JSON");
+        }
+
+        const data = await response.json();
+        const predictionFeatures = data.results?.features;
+        if (!Array.isArray(predictionFeatures)) {
+          throw new Error("Expected an array of prediction features");
+        }
+        const validPredictionData = predictionFeatures.filter(
+          (feature) =>
+            feature.type === "Feature" &&
+            feature.geometry &&
+            (feature.geometry.type === "Polygon" ||
+              feature.geometry.type === "MultiPolygon") &&
+            feature.geometry.coordinates
+        );
+        setPredictionData(validPredictionData);
+        console.log("Fetched Prediction Data:", validPredictionData);
+      } catch (error) {
+        console.error("Error fetching prediction data:", error.message);
+      }
+    };
+    fetchPredictionData();
+  }, []);
+
+  useEffect(() => {
+    if (map.current && predictionData.length > 0 && showPrediction) {
+      // Remove existing prediction layer if it exists
+      if (map.current.getSource("prediction")) {
+        map.current.removeLayer("prediction-fill");
+        map.current.removeLayer("prediction-line");
+        map.current.removeSource("prediction");
+      }
+
+      // Add prediction data as a source
+      map.current.addSource("prediction", {
+        type: "geojson",
+        data: {
+          type: "FeatureCollection",
+          features: predictionData,
+        },
+      });
+
+      map.current.addLayer({
+        id: "prediction-fill",
+        type: "fill",
+        source: "prediction",
+        paint: {
+          "fill-color": [
+            "interpolate",
+            ["linear"],
+            ["get", "risk_level"], // Assuming there's a risk_level property
+            1,
+            "#FFFF00", // Yellow for low risk
+            2,
+            "#FFA500", // Orange for medium risk
+            3,
+            "#FF4500", // OrangeRed for high risk
+            4,
+            "#FF0000", // Red for very high risk
+            5,
+            "#8B0000", // DarkRed for extreme risk
+          ],
+          "fill-opacity": 0.6,
+        },
+      });
+      map.current.addLayer({
+        id: "prediction-line",
+        type: "line",
+        source: "prediction",
+        paint: {
+          "line-color": "#000000",
+          "line-width": 1,
+          "line-opacity": 0.7,
+        },
+      });
+    } else if (map.current && map.current.getSource("prediction")) {
+      map.current.removeLayer("prediction-fill");
+      map.current.removeLayer("prediction-line");
+      map.current.removeSource("prediction");
+    }
+  }, [predictionData, showPrediction]);
+
   // Handle 2D/3D toggle
   useEffect(() => {
     if (map.current) {
@@ -510,7 +615,6 @@ function Maps() {
     if (searchQuery.trim() === "") return;
 
     console.log("Searching for:", searchQuery);
-    // Implement search functionality here
   };
 
   return (
@@ -629,6 +733,23 @@ function Maps() {
                 {showAdministrativeBoundaries
                   ? "Hide Boundaries"
                   : "Show Boundaries"}
+              </label>
+            </div>
+            <div className="flex items-center px-2 py-1 hover:bg-gray-100 rounded cursor-pointer">
+              <input
+                type="checkbox"
+                id="prediction"
+                checked={showPrediction}
+                onChange={() => setShowPrediction(!showPrediction)}
+                className="mr-2 cursor-pointer"
+              />
+              <label
+                htmlFor="prediction"
+                className={`text-sm cursor-pointer ${
+                  showPrediction ? "text-blue-500 font-bold" : "text-black"
+                }`}
+              >
+                {showPrediction ? "Hide Prediction" : "Show Prediction"}
               </label>
             </div>
           </div>
