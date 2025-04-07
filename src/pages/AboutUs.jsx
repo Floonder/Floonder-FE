@@ -1,6 +1,20 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { motion } from "framer-motion";
+
+const cardVariant = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: i * 0.1,
+      duration: 0.5,
+      ease: "easeOut",
+    },
+  }),
+};
 
 const AboutUs = () => {
   const canvasRef = useRef(null);
@@ -9,43 +23,46 @@ const AboutUs = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    const updateCanvasSize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
     const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    updateCanvasSize();
 
     const stars = [];
     const starCount = 150;
 
     for (let i = 0; i < starCount; i++) {
       stars.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        size: Math.random() * 2.5 + 0.8, // Larger size
+        xRatio: Math.random(), // Posisi relatif (0-1)
+        yRatio: Math.random(), // Posisi relatif (0-1)
+        size: Math.random() * 2.5 + 0.8,
         opacity: Math.random() * 0.8 + 0.2,
         speed: Math.random() * 0.04 + 0.01,
       });
     }
 
+    let animationFrameId;
+
     const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = "rgba(15, 15, 15, 0.3)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       stars.forEach((star) => {
+        const x = star.xRatio * canvas.width;
+        const y = star.yRatio * canvas.height;
+
         ctx.beginPath();
         ctx.fillStyle = `rgba(6, 182, 212, ${star.opacity})`;
-        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        ctx.arc(x, y, star.size, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.beginPath();
-        ctx.arc(star.x, star.y, star.size * 2, 0, Math.PI * 2);
-        const gradient = ctx.createRadialGradient(
-          star.x,
-          star.y,
-          0,
-          star.x,
-          star.y,
-          star.size * 2
-        );
+        ctx.arc(x, y, star.size * 2, 0, Math.PI * 2);
+        const gradient = ctx.createRadialGradient(x, y, 0, x, y, star.size * 2);
         gradient.addColorStop(0, `rgba(6, 182, 212, ${star.opacity * 0.5})`);
         gradient.addColorStop(1, "rgba(6, 182, 212, 0)");
         ctx.fillStyle = gradient;
@@ -58,30 +75,69 @@ const AboutUs = () => {
         }
       });
 
-      requestAnimationFrame(animate);
+      animationFrameId = requestAnimationFrame(animate);
     };
 
     animate();
 
     const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      updateCanvasSize();
     };
 
     window.addEventListener("resize", handleResize);
 
+    const handleScroll = () => {
+      cancelAnimationFrame(animationFrameId);
+      setTimeout(() => {
+        animationFrameId = requestAnimationFrame(animate);
+      }, 100);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
     return () => {
+      cancelAnimationFrame(animationFrameId);
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
+
+  const teamMembers = [
+    {
+      name: "Rahman Hakim",
+      role: "Pengembang Backend",
+      bio: "Pengembang backend berpengalaman dengan spesialisasi di Golang. Sangat tertarik membangun API yang skalabel dan layanan mikro.",
+      img: "/rahman.png",
+    },
+    {
+      name: "Dewi Puspita",
+      role: "Desainer UI/UX",
+      bio: "Desainer pemenang penghargaan dengan ketelitian tinggi. Menciptakan pengalaman pengguna yang menarik melalui sistem desain yang penuh pemikiran.",
+      img: "/dewi.png",
+    },
+    {
+      name: "Aisha Nur Izzati",
+      role: "Manajer Proyek",
+      bio: "PM bersertifikat dengan pengalaman memimpin tim lintas fungsi. Memastikan proyek diselesaikan tepat waktu dan sesuai ruang lingkup.",
+      img: "/icha.png",
+    },
+    {
+      name: "Rio Ragil Ramdani",
+      role: "Pengembang Frontend",
+      bio: "Pengembang frontend dengan spesialisasi React dan Vue.js. Senang menciptakan aplikasi web interaktif dengan fokus pada performa.",
+      img: "/rio.png",
+    },
+  ];
 
   return (
     <div className="bg-[#0F0F0F] text-white min-h-screen flex flex-col overflow-x-hidden relative">
       {/* Twinkling Stars Canvas */}
-      <canvas
-        ref={canvasRef}
-        className="absolute inset-0 pointer-events-none z-0"
-      />
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <canvas
+          ref={canvasRef}
+          className="w-full h-full pointer-events-none z-0"
+        />
+      </div>
 
       {/* Background Gradient Circles */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
@@ -157,60 +213,55 @@ const AboutUs = () => {
             Tim Kami
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-            {[
-              {
-                name: "Rahman Hakim",
-                role: "Pengembang Backend",
-                bio: "Pengembang backend berpengalaman dengan spesialisasi di Golang. Sangat tertarik membangun API yang skalabel dan layanan mikro.",
-                img: "/maps1.png",
-              },
-              {
-                name: "Dewi Puspita",
-                role: "Desainer UI/UX",
-                bio: "Desainer pemenang penghargaan dengan ketelitian tinggi. Menciptakan pengalaman pengguna yang menarik melalui sistem desain yang penuh pemikiran.",
-                img: "/team2.jpg", // Fixed: Changed numeric value to proper image path
-              },
-              {
-                name: "Aisha Nur Izzati",
-                role: "Manajer Proyek",
-                bio: "PM bersertifikat dengan pengalaman memimpin tim lintas fungsi. Memastikan proyek diselesaikan tepat waktu dan sesuai ruang lingkup.",
-                img: "/team3.jpg", // Fixed: Changed numeric value to proper image path
-              },
-              {
-                name: "Rio Ragil Ramdani",
-                role: "Pengembang Frontend",
-                bio: "Pengembang frontend dengan spesialisasi React dan Vue.js. Senang menciptakan aplikasi web interaktif dengan fokus pada performa.",
-                img: "/team4.jpg", // Fixed: Changed numeric value to proper image path
-              },
-            ].map((member) => (
-              <div
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 px-4 sm:px-6 lg:px-8">
+            {teamMembers.map((member, index) => (
+              <motion.div
                 key={member.name}
-                className="bg-[#1A1A1A] rounded-lg overflow-hidden shadow border border-gray-800 
-        transform transition-all duration-300 hover:bg-[#2A2A2A] hover:-translate-y-1"
+                className="group bg-gradient-to-br from-[#1F2937] to-[#111827] rounded-2xl p-[1px] shadow-lg hover:shadow-xl transition-all duration-300"
+                variants={cardVariant}
+                initial="hidden"
+                animate="visible"
+                custom={index}
               >
-                <img
-                  src={member.img}
-                  alt={member.name}
-                  className="w-full h-48 md:h-56 object-cover"
-                />
-                <div className="p-4 md:p-6">
-                  <h3 className="font-bold text-white text-lg mb-1">
-                    {member.name}
-                  </h3>
-                  <p className="text-cyan-400 text-sm mb-3">{member.role}</p>
-                  <p className="text-gray-400 mb-3 md:mb-4 text-base">
-                    {member.bio}
-                  </p>
+                <div className="bg-[#1A1A1A] rounded-2xl overflow-hidden flex flex-col h-full">
+                  {/* Image */}
+                  <div className="w-full h-40 sm:h-48 md:h-56 relative">
+                    <img
+                      src={member.img}
+                      alt={member.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "/placeholder-image.jpg";
+                      }}
+                    />
+                  </div>
 
-                  <a
-                    href="#"
-                    className="text-cyan-400 hover:text-cyan-300 text-sm md:text-base font-medium"
-                  >
-                    Lihat Profil
-                  </a>
+                  {/* Content */}
+                  <div className="p-4 sm:p-5 md:p-6 flex flex-col justify-between flex-grow">
+                    <div>
+                      <h3 className="font-semibold text-white text-lg sm:text-xl mb-1">
+                        {member.name}
+                      </h3>
+                      <span className="inline-block bg-cyan-800/30 text-cyan-300 text-xs font-medium px-3 py-1 rounded-full mb-3">
+                        {member.role}
+                      </span>
+                      <p className="text-gray-400 text-sm leading-relaxed line-clamp-4">
+                        {member.bio}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 sm:mt-5">
+                      <a
+                        href="#"
+                        className="inline-block w-full text-center bg-cyan-500 hover:bg-cyan-400 text-white text-sm sm:text-base font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+                      >
+                        Lihat Profil
+                      </a>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
