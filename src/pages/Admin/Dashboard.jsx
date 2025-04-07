@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 const Dashboard = () => {
   const [userData, setUserData] = useState(null);
@@ -68,7 +70,10 @@ const Dashboard = () => {
     ],
   });
 
-  const mapRef = useRef(null);
+  const mapContainer = useRef(null);
+  const map = useRef(null);
+  const markersRef = useRef([]);
+  const MAP_SERVICE_KEY = import.meta.env.VITE_MAP_SERVICE_KEY;
 
   // Sample data for widgets
   const stats = [
@@ -113,18 +118,261 @@ const Dashboard = () => {
     { id: 5, name: "Urban Zone", color: "#EC4899", count: 15 },
   ];
 
+  const mapStyles = {
+    streets: `https://basemap.mapid.io/styles/street-new-generation/style.json?key=${MAP_SERVICE_KEY}`,
+    satellite: `https://basemap.mapid.io/styles/satellite/style.json?key=${MAP_SERVICE_KEY}`,
+    terrain: `https://basemap.mapid.io/styles/light/style.json?key=${MAP_SERVICE_KEY}`,
+    dark: `https://basemap.mapid.io/styles/dark/style.json?key=${MAP_SERVICE_KEY}`,
+  };
+
   useEffect(() => {
     const user = localStorage.getItem("user");
     if (user) {
       setUserData(JSON.parse(user));
     }
 
-    console.log("GIS Map initialized");
+    // Initialize map only if it doesn't exist yet
+    if (!map.current && mapContainer.current) {
+      initializeMap();
+    }
 
     return () => {
-      console.log("GIS Map destroyed");
+      // Clean up map and markers when component unmounts
+      if (map.current) {
+        clearMarkers();
+        map.current.remove();
+        map.current = null;
+      }
     };
   }, []);
+
+  // Effect for handling map style changes
+  useEffect(() => {
+    if (map.current) {
+      updateMapStyle();
+    }
+  }, [mapLayers]);
+
+  // Effect for handling selected location changes
+  useEffect(() => {
+    if (map.current && selectedLocation) {
+      flyToLocation(selectedLocation);
+    }
+  }, [selectedLocation]);
+
+  const initializeMap = () => {
+    const defaultCenter = [106.8456, -6.2088]; // Jakarta coordinates, note [lng, lat] order
+
+    map.current = new maplibregl.Map({
+      container: mapContainer.current,
+      style: mapStyles.streets,
+      center: defaultCenter,
+      zoom: 11,
+      pitch: 40,
+    });
+
+    map.current.on("load", () => {
+      console.log("Map initialized");
+      addMapControls();
+      addDataPoints();
+      addPolygons();
+    });
+  };
+
+  const updateMapStyle = () => {
+    let currentStyle = mapStyles.streets; // Default style
+
+    if (mapLayers.satellite) {
+      currentStyle = mapStyles.satellite;
+    } else if (mapLayers.terrain) {
+      currentStyle = mapStyles.terrain;
+    } else if (!mapLayers.streets) {
+      currentStyle = mapStyles.dark;
+    }
+
+    if (map.current) {
+      map.current.setStyle(currentStyle);
+
+      // Re-add data points and polygons after style changes
+      map.current.once("style.load", () => {
+        addDataPoints();
+        addPolygons();
+      });
+    }
+  };
+
+  const addMapControls = () => {
+    // Add navigation controls (zoom in/out, rotation)
+    map.current.addControl(new maplibregl.NavigationControl(), "top-right");
+
+    // Add scale control
+    map.current.addControl(new maplibregl.ScaleControl(), "bottom-left");
+
+    // Add fullscreen control
+    map.current.addControl(new maplibregl.FullscreenControl(), "top-right");
+  };
+
+  const addDataPoints = () => {
+    // Clear existing markers first
+    clearMarkers();
+
+    // Add new markers for each data point
+    gisData.points.forEach((point) => {
+      // Create a marker element
+      const markerElement = document.createElement("div");
+      markerElement.className = "marker";
+      markerElement.style.width = "15px";
+      markerElement.style.height = "15px";
+      markerElement.style.borderRadius = "50%";
+
+      // Set color based on point type
+      if (point.type === "water") {
+        markerElement.style.backgroundColor = "#3B82F6";
+      } else if (point.type === "air") {
+        markerElement.style.backgroundColor = "#10B981";
+      } else {
+        markerElement.style.backgroundColor = "#F59E0B";
+      }
+
+      markerElement.style.border = "2px solid white";
+      markerElement.style.cursor = "pointer";
+
+      // Create and add the marker
+      const marker = new maplibregl.Marker(markerElement)
+        .setLngLat([point.lng, point.lat])
+        .setPopup(
+          new maplibregl.Popup().setHTML(`
+          <div>
+            <h3 style="font-weight: bold;">${point.name}</h3>
+            <p>Type: ${point.type}</p>
+            <p>Coordinates: ${point.lat.toFixed(4)}, ${point.lng.toFixed(4)}</p>
+          </div>
+        `)
+        )
+        .addTo(map.current);
+
+      // Store marker reference for cleanup
+      markersRef.current.push(marker);
+    });
+  };
+
+  const addPolygons = () => {
+    if (!map.current.getSource("polygons")) {
+      // Add polygons as a source and layer
+      gisData.polygons.forEach((polygon, index) => {
+        const sourceId = `polygon-source-${index}`;
+        const layerId = `polygon-layer-${index}`;
+
+        // Convert coordinates to GeoJSON format
+        const polygonCoordinates = polygon.coordinates.map((coord) => [
+          coord[1],
+          coord[0],
+        ]);
+
+        // Add the source
+        map.current.addSource(sourceId, {
+          type: "geojson",
+          data: {
+            type: "Feature",
+            properties: {
+              name: polygon.name,
+              type: polygon.type,
+            },
+            geometry: {
+              type: "Polygon",
+              coordinates: [polygonCoordinates],
+            },
+          },
+        });
+
+        // Add the fill layer
+        map.current.addLayer({
+          id: layerId,
+          type: "fill",
+          source: sourceId,
+          layout: {},
+          paint: {
+            "fill-color": polygon.type === "protected" ? "#6366F1" : "#EC4899",
+            "fill-opacity": 0.4,
+          },
+        });
+
+        // Add outline layer
+        map.current.addLayer({
+          id: `${layerId}-outline`,
+          type: "line",
+          source: sourceId,
+          layout: {},
+          paint: {
+            "line-color": polygon.type === "protected" ? "#4F46E5" : "#DB2777",
+            "line-width": 2,
+          },
+        });
+
+        // Add click event for the polygon
+        map.current.on("click", layerId, (e) => {
+          const features = map.current.queryRenderedFeatures(e.point, {
+            layers: [layerId],
+          });
+          if (features.length > 0) {
+            const properties = features[0].properties;
+            new maplibregl.Popup()
+              .setLngLat(e.lngLat)
+              .setHTML(
+                `
+                <div>
+                  <h3 style="font-weight: bold;">${properties.name}</h3>
+                  <p>Type: ${properties.type}</p>
+                </div>
+              `
+              )
+              .addTo(map.current);
+          }
+        });
+
+        // Change cursor on hover
+        map.current.on("mouseenter", layerId, () => {
+          map.current.getCanvas().style.cursor = "pointer";
+        });
+
+        map.current.on("mouseleave", layerId, () => {
+          map.current.getCanvas().style.cursor = "";
+        });
+      });
+    }
+  };
+
+  const clearMarkers = () => {
+    // Remove all existing markers
+    markersRef.current.forEach((marker) => marker.remove());
+    markersRef.current = [];
+  };
+
+  const flyToLocation = (location) => {
+    if (map.current) {
+      map.current.flyTo({
+        center: [location.lng, location.lat],
+        zoom: 14,
+        essential: true,
+      });
+
+      // Create a popup at the selected location
+      new maplibregl.Popup({ closeOnClick: false, closeButton: true })
+        .setLngLat([location.lng, location.lat])
+        .setHTML(
+          `
+          <div>
+            <h3 style="font-weight: bold;">${location.name}</h3>
+            <p>Type: ${location.type}</p>
+            <p>Coordinates: ${location.lat.toFixed(4)}, ${location.lng.toFixed(
+            4
+          )}</p>
+          </div>
+        `
+        )
+        .addTo(map.current);
+    }
+  };
 
   const toggleMapLayer = (layer) => {
     setMapLayers({
@@ -153,6 +401,7 @@ const Dashboard = () => {
       });
     }, 1500);
   };
+
   const handleLogout = () => {
     localStorage.removeItem("user");
     window.location.href = "/";
@@ -285,11 +534,16 @@ const Dashboard = () => {
               </div>
               <div className="p-4">
                 <div
-                  className="bg-gray-200 dark:bg-gray-700 h-64 rounded flex flex-col items-center justify-center"
-                  ref={mapRef}
+                  className="h-64 rounded"
+                  ref={mapContainer}
+                  style={{
+                    width: "100%",
+                    height: "400px",
+                    border: "1px solid rgba(0,0,0,0.1)",
+                  }}
                 >
-                  {gisData.loading ? (
-                    <div className="flex items-center justify-center">
+                  {gisData.loading && (
+                    <div className="absolute inset-0 bg-black bg-opacity-20 z-10 flex items-center justify-center">
                       <svg
                         className="animate-spin h-8 w-8 text-cyan-500"
                         xmlns="http://www.w3.org/2000/svg"
@@ -310,31 +564,18 @@ const Dashboard = () => {
                           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                         ></path>
                       </svg>
-                      <span className="ml-2 text-gray-500 dark:text-gray-400">
+                      <span className="ml-2 text-white font-medium">
                         Processing GIS data...
                       </span>
                     </div>
-                  ) : (
-                    <>
-                      <p className="text-gray-500 dark:text-gray-400 mb-2">
-                        Interactive GIS map of Indonesia
-                      </p>
-                      <div className="flex justify-center w-full">
-                        <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded text-xs text-blue-800 dark:text-blue-200">
-                          Map centered at:{" "}
-                          {selectedLocation
-                            ? `${selectedLocation.name} (${selectedLocation.lat}, ${selectedLocation.lng})`
-                            : "Jakarta, Indonesia (-6.2088, 106.8456)"}
-                        </div>
-                      </div>
-                      {gisData.analysisResults && (
-                        <div className="mt-2 p-2 bg-green-100 dark:bg-green-900 rounded text-xs text-green-800 dark:text-green-200 w-full text-center">
-                          {gisData.analysisResults.summary}
-                        </div>
-                      )}
-                    </>
                   )}
                 </div>
+
+                {gisData.analysisResults && (
+                  <div className="mt-2 p-2 bg-green-100 dark:bg-green-900 rounded text-xs text-green-800 dark:text-green-200 w-full text-center">
+                    {gisData.analysisResults.summary}
+                  </div>
+                )}
 
                 {/* GIS Feature Legend */}
                 <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
