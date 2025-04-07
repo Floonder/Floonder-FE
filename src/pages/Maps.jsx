@@ -84,7 +84,7 @@ function Maps() {
         );
 
         setRiverData(validRiverData);
-        console.log("Fetched River Data:", validRiverData);
+        // console.log("Fetched River Data:", validRiverData);
       } catch (error) {
         console.error("Error fetching river data:", error.message);
       }
@@ -196,7 +196,7 @@ function Maps() {
         );
 
         setAdministrativeData(validAdministrativeData);
-        console.log("Fetched Administrative Data:", validAdministrativeData);
+        // console.log("Fetched Administrative Data:", validAdministrativeData);
       } catch (error) {
         console.error("Error fetching administrative data:", error.message);
       }
@@ -297,7 +297,7 @@ function Maps() {
             feature.geometry.coordinates
         );
         setRainfallData(validRainfallData);
-        console.log("Fetched Rainfall Data:", validRainfallData);
+        // console.log("Fetched Rainfall Data:", validRainfallData);
 
         // Add a debug message to see if any features were filtered out
         if (validRainfallData.length !== rainfallFeatures.length) {
@@ -452,7 +452,7 @@ function Maps() {
             feature.geometry.coordinates
         );
         setPredictionData(validPredictionData);
-        console.log("Fetched Prediction Data:", validPredictionData);
+        // console.log("Fetched Prediction Data:", validPredictionData);
       } catch (error) {
         console.error("Error fetching prediction data:", error.message);
       }
@@ -558,7 +558,7 @@ function Maps() {
 
         if (features.length > 0) {
           const feature = features[0];
-          console.log("Clicked feature:", feature);
+          // console.log("Clicked feature:", feature);
           setSelectedFeature(feature);
           setShowInfoPanel(true);
         }
