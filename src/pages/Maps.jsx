@@ -266,7 +266,7 @@ function Maps() {
         const response = await fetch(
           `${
             import.meta.env.VITE_HOST_API
-          }/api/public/gis/curah-hujan?limit=20`,
+          }/api/public/gis/curah-hujan?limit=10000`,
           {
             method: "GET",
             headers: {
@@ -275,27 +275,20 @@ function Maps() {
             },
           }
         );
-
         if (!response.ok) {
           throw new Error(`HTTP Error! Status: ${response.status}`);
         }
-
         const contentType = response.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
           const text = await response.text();
           console.error("Unexpected response content:", text);
           throw new Error("Response is not JSON");
         }
-
         const data = await response.json();
-
-        // Ambil data dari `results.features`
         const rainfallFeatures = data.results?.features;
-
         if (!Array.isArray(rainfallFeatures)) {
           throw new Error("Expected an array of rainfall features");
         }
-
         const validRainfallData = rainfallFeatures.filter(
           (feature) =>
             feature.type === "Feature" &&
@@ -303,27 +296,38 @@ function Maps() {
             feature.geometry.type === "Polygon" &&
             feature.geometry.coordinates
         );
-
         setRainfallData(validRainfallData);
         console.log("Fetched Rainfall Data:", validRainfallData);
+
+        // Add a debug message to see if any features were filtered out
+        if (validRainfallData.length !== rainfallFeatures.length) {
+          console.warn(
+            `Filtered out ${
+              rainfallFeatures.length - validRainfallData.length
+            } invalid features`
+          );
+        }
       } catch (error) {
         console.error("Error fetching rainfall data:", error.message);
       }
     };
-
     fetchRainfallData();
   }, []);
 
-  useEffect(() => {
-    console.log("Rainfall Data:", rainfallData);
-    console.log("Show Rainfall:", showRainfall);
-    if (map.current && rainfallData.length > 0 && showRainfall) {
-      console.log("Attempting to add rainfall layer");
+  const addRainfallLayers = () => {
+    if (!map.current || !map.current.loaded()) {
+      console.warn("Map not ready yet, cannot add rainfall layers");
+      return;
+    }
+
+    try {
       if (map.current.getSource("rainfall")) {
         map.current.removeLayer("rainfall-fill");
         map.current.removeLayer("rainfall-line");
         map.current.removeSource("rainfall");
       }
+
+      console.log("Adding rainfall source with features:", rainfallData.length);
 
       // Add rainfall data as a source
       map.current.addSource("rainfall", {
@@ -334,31 +338,29 @@ function Maps() {
         },
       });
 
+      // Add rainfall fill layer
       map.current.addLayer({
         id: "rainfall-fill",
         type: "fill",
         source: "rainfall",
         paint: {
           "fill-color": [
-            "interpolate",
-            ["linear"],
-            ["get", "gridcode"],
-            1,
-            "#90EE90", // Light green for low rainfall
+            "step",
+            ["min", ["get", "gridcode"], 5], // Cap at 5, anything higher becomes 5
+            "#90EE90", // Light green for level 1 (Very Low)
             2,
-            "#32CD32", // Lime green for moderate rainfall
+            "#32CD32", // Lime green for level 2 (Low)
             3,
-            "#228B22", // Forest green for high rainfall
+            "#228B22", // Forest green for level 3 (Moderate)
             4,
-            "#006400", // Dark green for very high rainfall
+            "#FFA500", // Orange for level 4 (High)
             5,
-            "#013220", // Darkest green for extreme rainfall
+            "#FF0000", // Red for level 5 (Very High) and anything above
           ],
           "fill-opacity": 0.5,
         },
       });
 
-      // Add rainfall boundaries layer
       map.current.addLayer({
         id: "rainfall-line",
         type: "line",
@@ -369,11 +371,45 @@ function Maps() {
           "line-opacity": 0.5,
         },
       });
-    } else if (map.current && map.current.getSource("rainfall")) {
-      // Remove rainfall layers if hidden
-      map.current.removeLayer("rainfall-fill");
-      map.current.removeLayer("rainfall-line");
-      map.current.removeSource("rainfall");
+
+      const layerAdded = map.current.getLayer("rainfall-fill") !== undefined;
+      console.log("Rainfall layer added successfully:", layerAdded);
+
+      if (rainfallData.length > 0) {
+        const firstFeature = rainfallData[0];
+        const coords = firstFeature.geometry.coordinates[0][0];
+
+        console.log("Flying to rainfall coordinates:", coords);
+        map.current.flyTo({
+          center: [coords[0], coords[1]],
+          zoom: 10,
+          essential: true,
+        });
+
+        // Log the bounds info
+        const bounds = map.current.getBounds();
+        console.log("Current map bounds after flying:", bounds.toString());
+      }
+    } catch (error) {
+      console.error("Error adding rainfall layers:", error);
+    }
+  };
+
+  useEffect(() => {
+    console.log("Rainfall Data:", rainfallData);
+    console.log("Show Rainfall:", showRainfall);
+
+    if (map.current && map.current.loaded() && rainfallData.length > 0) {
+      if (showRainfall) {
+        console.log("Attempting to add rainfall layer");
+        addRainfallLayers();
+      } else if (map.current.getSource("rainfall")) {
+        // Remove rainfall layers if hidden
+        console.log("Removing rainfall layers");
+        map.current.removeLayer("rainfall-fill");
+        map.current.removeLayer("rainfall-line");
+        map.current.removeSource("rainfall");
+      }
     }
   }, [rainfallData, showRainfall]);
 
@@ -791,21 +827,14 @@ function Maps() {
     switch (layerId) {
       case "river-lines":
         return {
-          title: properties.nama || "River",
+          title: properties.remark || "River",
           details: [
-            { label: "Name", value: properties.nama || "Unknown" },
+            { label: "Name", value: properties.namobj || "Unknown" },
+            { label: "Remark", value: properties.remark || "N/A" },
             {
-              label: "Length",
-              value: `${(properties.length_km || 0).toFixed(2)} km`,
-            },
-            {
-              label: "Width",
-              value: `${(properties.width_m || 0).toFixed(2)} m`,
-            },
-            {
-              label: "Flow Rate",
-              value: properties.flow_rate
-                ? `${properties.flow_rate} m³/s`
+              label: "Shape Length",
+              value: properties.shape_leng
+                ? `${properties.shape_leng.toFixed(8)}`
                 : "N/A",
             },
           ],
@@ -813,28 +842,24 @@ function Maps() {
 
       case "administrative-boundaries-fill":
         return {
-          title: properties.nama || "Administrative Area",
+          title: properties.namobj || "Administrative Area",
           details: [
-            { label: "Name", value: properties.nama || "Unknown" },
-            { label: "Type", value: properties.type || "Region" },
-            { label: "Code", value: properties.code || "N/A" },
-            {
-              label: "Population",
-              value: properties.population
-                ? properties.population.toLocaleString()
-                : "N/A",
-            },
+            { label: "Name", value: properties.namobj || "Unknown" },
+            { label: "Type", value: properties.remark || "Region" },
+            { label: "District", value: properties.wadmkc || "N/A" },
+            { label: "Regency", value: properties.wadmkk || "N/A" },
+            { label: "Province", value: properties.wadmpr || "N/A" },
             {
               label: "Area",
-              value: properties.area_km2
-                ? `${properties.area_km2.toFixed(2)} km²`
+              value: properties.shape_area
+                ? `${(properties.shape_area * 10000).toFixed(2)} km²`
                 : "N/A",
             },
           ],
         };
 
       case "rainfall-fill": {
-        // Pakai blok agar const aman
+        // Define rainfall levels with handling for values over 5
         const rainfallLevels = {
           1: "Very Low",
           2: "Low",
@@ -842,23 +867,28 @@ function Maps() {
           4: "High",
           5: "Very High",
         };
+
+        // Handle gridcode values higher than 5
+        const level = properties.gridcode > 5 ? 5 : properties.gridcode;
+        const levelText = rainfallLevels[level] || "Unknown";
+
         return {
           title: "Rainfall Data",
           details: [
             { label: "Grid Code", value: properties.gridcode || "N/A" },
             {
               label: "Level",
-              value: properties.gridcode
-                ? rainfallLevels[properties.gridcode] || "Unknown"
-                : "N/A",
+              value: properties.gridcode ? levelText : "N/A",
             },
             {
               label: "Amount",
-              value: properties.amount_mm
-                ? `${properties.amount_mm} mm`
-                : "N/A",
+              value: "N/A",
             },
-            { label: "Recorded", value: properties.date || "N/A" },
+            { label: "Recorded", value: "N/A" },
+            {
+              label: "Location",
+              value: `Coordinates available in geometry object`,
+            },
           ],
         };
       }
