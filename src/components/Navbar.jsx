@@ -4,12 +4,6 @@ import { Link, useNavigate } from "react-router-dom";
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,75 +30,6 @@ const Navbar = () => {
     }
   };
 
-  const openSignInModal = (e) => {
-    e.preventDefault();
-    setIsSignInModalOpen(true);
-    document.body.style.overflow = "hidden";
-  };
-
-  const closeSignInModal = () => {
-    setIsSignInModalOpen(false);
-    document.body.style.overflow = "unset";
-    // Reset form state when closing
-    setEmail("");
-    setPassword("");
-    setError("");
-  };
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    try {
-      // Use the full API URL
-      const apiUrl = `${import.meta.env.VITE_HOST_API}/api/auth/login`;
-
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-        mode: "cors",
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage = "Login failed";
-
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-          errorMessage = errorText || errorMessage;
-        }
-
-        throw new Error(errorMessage);
-      }
-      const data = await response.json();
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
-      if (data.data && data.data.access) {
-        localStorage.setItem("accessToken", data.data.access);
-      }
-      if (data.data && data.data.email) {
-        const userData = {
-          email: data.data.email,
-          id: data.data.id,
-        };
-        localStorage.setItem("user", JSON.stringify(userData));
-      }
-      closeSignInModal();
-      navigate("/dashboard");
-    } catch (err) {
-      console.error("Login error:", err);
-      setError(err.message || "An error occurred during login");
-    } finally {
-      setLoading(false);
-    }
-  };
   return (
     <>
       <nav
@@ -115,9 +40,9 @@ const Navbar = () => {
         }`}
       >
         <div className="relative px-4 py-4 flex justify-between items-center max-w-6xl mx-auto">
-          <a
+          <Link
             className="text-xs font-bold leading-none text-white flex items-center"
-            href="/"
+            to="/"
           >
             <svg
               className="h-8 sm:h-10 mr-2"
@@ -125,7 +50,7 @@ const Navbar = () => {
               viewBox="0 0 10240 10240"
             ></svg>
             <span className="text-sm sm:text-base">Floonder</span>
-          </a>
+          </Link>
           <div className="lg:hidden">
             <button
               className="navbar-burger flex items-center text-white p-2"
@@ -200,19 +125,18 @@ const Navbar = () => {
             </li>
           </ul>
           <div className="hidden lg:block">
-            <a
+            <Link
               className="lg:ml-auto lg:mr-3 py-2 px-6 border border-[#6afffa] text-white hover:bg-cyan-600 hover:text-white text-sm font-bold rounded-full transition duration-300"
-              href="#"
-              onClick={openSignInModal}
+              to="/auth"
             >
               Sign In
-            </a>
-            <a
+            </Link>
+            <Link
               className="lg:inline-block py-2 px-6 bg-cyan-500 hover:bg-white text-black font-bold rounded-full transition duration-300"
-              href="#"
+              to="/signup"
             >
               Sign up
-            </a>
+            </Link>
           </div>
         </div>
         {/* Mobile Menu */}
@@ -228,9 +152,9 @@ const Navbar = () => {
           <nav className="fixed inset-0 w-full h-full bg-[#121212] overflow-auto">
             <div className="container mx-auto h-full flex flex-col">
               <div className="flex items-center justify-between p-4">
-                <a
+                <Link
                   className="text-2xl font-bold leading-none text-white flex items-center"
-                  href="#"
+                  to="/"
                 >
                   <svg
                     className="h-10 mr-2"
@@ -238,7 +162,7 @@ const Navbar = () => {
                     viewBox="0 0 10240 10240"
                   ></svg>
                   Floonder
-                </a>
+                </Link>
                 <button
                   className="navbar-close text-white hover:text-[#8b8b8b]"
                   onClick={toggleMenu}
@@ -333,22 +257,20 @@ const Navbar = () => {
                 </ul>
               </div>
               <div className="p-4 mt-auto">
-                <button
+                <Link
+                  to="/signin"
                   className="block w-full mb-3 px-4 py-3 text-center text-white border border-[#6afffa] hover:bg-cyan-600 font-semibold rounded-lg transition duration-300"
-                  onClick={(e) => {
-                    toggleMenu();
-                    openSignInModal(e);
-                  }}
+                  onClick={toggleMenu}
                 >
                   Sign In
-                </button>
-                <a
+                </Link>
+                <Link
+                  to="/signup"
                   className="block w-full px-4 py-3 text-center text-black font-semibold bg-cyan-500 hover:bg-white rounded-lg transition duration-300"
-                  href="#"
                   onClick={toggleMenu}
                 >
                   Sign Up
-                </a>
+                </Link>
               </div>
               <div className="p-4 text-center text-white/50 text-sm">
                 <p>© 2025 Floonder. All rights reserved.</p>
@@ -357,125 +279,8 @@ const Navbar = () => {
           </nav>
         </div>
       </nav>
-
-      {isSignInModalOpen && (
-        <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-75 flex items-center justify-center">
-          <div
-            className="fixed inset-0 transition-opacity"
-            onClick={closeSignInModal}
-            aria-hidden="true"
-          ></div>
-
-          <div className="relative bg-[#121212] rounded-lg max-w-md w-full mx-4 shadow-xl transition-all transform ease-out duration-300">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold text-white">Sign In</h3>
-                <button
-                  className="text-gray-400 hover:text-white"
-                  onClick={closeSignInModal}
-                  aria-label="Close"
-                >
-                  <svg
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Form login dengan event handler yang baru */}
-              <form className="space-y-4" onSubmit={handleLogin}>
-                {error && (
-                  <div className="bg-red-500/20 border border-red-500 text-red-300 px-4 py-2 rounded-lg text-sm">
-                    {error}
-                  </div>
-                )}
-
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-medium text-gray-300 mb-1"
-                  >
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    className="w-full px-4 py-2 rounded-lg border bg-[#1e1e1e] border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                    placeholder="name@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label
-                      htmlFor="password"
-                      className="block text-sm font-medium text-gray-300"
-                    >
-                      Password
-                    </label>
-                    <a
-                      href="#"
-                      className="text-xs text-cyan-500 hover:text-cyan-400"
-                    >
-                      Forgot password?
-                    </a>
-                  </div>
-                  <input
-                    type="password"
-                    id="password"
-                    className="w-full px-4 py-2 rounded-lg border bg-[#1e1e1e] border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="remember"
-                    className="text-cyan-500 focus:ring-2 focus:ring-cyan-500 rounded mr-2"
-                  />
-                  <label htmlFor="remember" className="text-sm text-gray-300">
-                    Remember me
-                  </label>
-                </div>
-
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full px-4 py-2 text-center font-medium text-black bg-cyan-500 hover:bg-cyan-400 rounded-lg transition duration-300 disabled:opacity-70"
-                  >
-                    {loading ? "Signing In..." : "Sign In"}
-                  </button>
-                </div>
-
-                <div className="text-center text-sm text-gray-400 mt-4">
-                  <span>Don't have an account? </span>
-                  <a href="#" className="text-cyan-500 hover:text-cyan-400">
-                    Sign up
-                  </a>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };
+
 export default Navbar;
