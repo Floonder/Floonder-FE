@@ -6,10 +6,10 @@ import "maplibre-gl/dist/maplibre-gl.css";
 const Dashboard = () => {
   const [userData, setUserData] = useState(null);
   const [mapLayers, setMapLayers] = useState({
-    streets: true,
+    streets: false,
     satellite: false,
     terrain: false,
-    boundaries: true,
+    boundaries: false,
   });
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [gisData, setGisData] = useState({
@@ -69,18 +69,109 @@ const Dashboard = () => {
       },
     ],
   });
+  const [statsData, setStatsData] = useState({
+    wilayahAdministrasi: { count: 0, loading: true, change: "+0%" },
+    sungai: { count: 0, loading: true, change: "+0%" },
+    curahHujan: { count: 0, loading: true, change: "+0%" },
+    mapUpdates: { count: 142, loading: false, change: "+15%" },
+  });
 
   const mapContainer = useRef(null);
   const map = useRef(null);
   const markersRef = useRef([]);
   const MAP_SERVICE_KEY = import.meta.env.VITE_MAP_SERVICE_KEY;
+  const HOST_API = import.meta.env.VITE_HOST_API;
 
-  // Sample data for widgets
-  const stats = [
-    { title: "Data Points", value: "1,245", change: "+12%", isUp: true },
-    { title: "GIS Layers", value: "24", change: "+8%", isUp: true },
-    { title: "Spatial Queries", value: "879", change: "-3%", isUp: false },
-    { title: "Map Updates", value: "142", change: "+15%", isUp: true },
+  // Fetch API data for stats
+  useEffect(() => {
+    const fetchStatsData = async () => {
+      try {
+        // Fetch wilayah administrasi data
+        const wilayahResponse = await fetch(
+          `${HOST_API}/api/public/gis/wilayah-administrasi`
+        );
+        const wilayahData = await wilayahResponse.json();
+        console.log("Wilayah Data:", wilayahData);
+
+        // Fetch sungai data
+        const sungaiResponse = await fetch(`${HOST_API}/api/public/gis/sungai`);
+        const sungaiData = await sungaiResponse.json();
+        console.log("Sungai Data:", sungaiData);
+
+        // Fetch curah hujan data
+        const hujanResponse = await fetch(
+          `${HOST_API}/api/public/gis/curah-hujan`
+        );
+        const hujanData = await hujanResponse.json();
+        console.log("Curah Hujan Data:", hujanData);
+
+        // Update stats with the counts from APIs
+        setStatsData({
+          wilayahAdministrasi: {
+            count: Array.isArray(wilayahData.data)
+              ? wilayahData.data.length
+              : 0,
+            loading: false,
+            change: `+${Math.floor(Math.random() * 10)}%`,
+            isUp: true,
+          },
+          sungai: {
+            count: Array.isArray(sungaiData.data) ? sungaiData.data.length : 0,
+            loading: false,
+            change: `+${Math.floor(Math.random() * 15)}%`,
+            isUp: true,
+          },
+          curahHujan: {
+            count: Array.isArray(hujanData.data) ? hujanData.data.length : 0,
+            loading: false,
+            change: `${Math.random() > 0.7 ? "-" : "+"}${Math.floor(
+              Math.random() * 12
+            )}%`,
+            isUp: Math.random() > 0.3,
+          },
+          mapUpdates: {
+            count: 142,
+            loading: false,
+            change: "+15%",
+            isUp: true,
+          },
+        });
+      } catch (error) {
+        console.error("Error fetching stats data:", error);
+        // Set error state or fallback data
+        setStatsData((prevStats) => ({
+          ...prevStats,
+          wilayahAdministrasi: {
+            count: "Error",
+            loading: false,
+            change: "N/A",
+            isUp: false,
+          },
+          sungai: {
+            count: "Error",
+            loading: false,
+            change: "N/A",
+            isUp: false,
+          },
+          curahHujan: {
+            count: "Error",
+            loading: false,
+            change: "N/A",
+            isUp: false,
+          },
+        }));
+      }
+    };
+
+    fetchStatsData();
+  }, [HOST_API]);
+
+  const featureTypes = [
+    { id: 1, name: "Water Quality Station", color: "#3B82F6", count: 24 },
+    { id: 2, name: "Air Quality Station", color: "#10B981", count: 18 },
+    { id: 3, name: "Soil Monitoring", color: "#F59E0B", count: 12 },
+    { id: 4, name: "Conservation Area", color: "#6366F1", count: 8 },
+    { id: 5, name: "Urban Zone", color: "#EC4899", count: 15 },
   ];
 
   const recentActivities = [
@@ -96,26 +187,6 @@ const Dashboard = () => {
       location: "Bandung Region",
       time: "4 hours ago",
     },
-    {
-      id: 3,
-      action: "Land use classification updated",
-      location: "East Java Province",
-      time: "1 day ago",
-    },
-    {
-      id: 4,
-      action: "GIS database synchronized",
-      location: "System-wide",
-      time: "2 days ago",
-    },
-  ];
-
-  const featureTypes = [
-    { id: 1, name: "Water Quality Station", color: "#3B82F6", count: 24 },
-    { id: 2, name: "Air Quality Station", color: "#10B981", count: 18 },
-    { id: 3, name: "Soil Monitoring", color: "#F59E0B", count: 12 },
-    { id: 4, name: "Conservation Area", color: "#6366F1", count: 8 },
-    { id: 5, name: "Urban Zone", color: "#EC4899", count: 15 },
   ];
 
   const mapStyles = {
@@ -161,7 +232,8 @@ const Dashboard = () => {
   }, [selectedLocation]);
 
   const initializeMap = () => {
-    const defaultCenter = [106.8456, -6.2088]; // Jakarta coordinates, note [lng, lat] order
+    const defaultCenter = [107.6098, -6.9149];
+    mapContainer.current.style.width = "100%";
 
     map.current = new maplibregl.Map({
       container: mapContainer.current,
@@ -178,9 +250,54 @@ const Dashboard = () => {
       addPolygons();
     });
   };
+  useEffect(() => {
+    if (map.current && map.current.isStyleLoaded()) {
+      // Handle wilayah administrasi layer
+      if (gisLayers.wilayahAdministrasi) {
+        addWilayahAdministrasi();
+      } else {
+        if (map.current.getLayer("wilayah-administrasi-layer")) {
+          map.current.removeLayer("wilayah-administrasi-layer");
+        }
+        if (map.current.getLayer("wilayah-administrasi-outline")) {
+          map.current.removeLayer("wilayah-administrasi-outline");
+        }
+        if (map.current.getSource("wilayah-administrasi-source")) {
+          map.current.removeSource("wilayah-administrasi-source");
+        }
+      }
+
+      // Handle sungai layer
+      if (gisLayers.sungai) {
+        addSungai();
+      } else {
+        if (map.current.getLayer("sungai-layer")) {
+          map.current.removeLayer("sungai-layer");
+        }
+        if (map.current.getSource("sungai-source")) {
+          map.current.removeSource("sungai-source");
+        }
+      }
+
+      // Handle curah hujan layer
+      if (gisLayers.curahHujan) {
+        addCurahHujan();
+      } else {
+        if (map.current.getLayer("curah-hujan-layer")) {
+          map.current.removeLayer("curah-hujan-layer");
+        }
+        if (map.current.getLayer("curah-hujan-outline")) {
+          map.current.removeLayer("curah-hujan-outline");
+        }
+        if (map.current.getSource("curah-hujan-source")) {
+          map.current.removeSource("curah-hujan-source");
+        }
+      }
+    }
+  }, []);
 
   const updateMapStyle = () => {
-    let currentStyle = mapStyles.streets; // Default style
+    let currentStyle = mapStyles.streets;
 
     if (mapLayers.satellite) {
       currentStyle = mapStyles.satellite;
@@ -191,25 +308,51 @@ const Dashboard = () => {
     }
 
     if (map.current) {
+      // Save current GIS layer state
+      const currentGisLayers = { ...gisLayers };
+
       map.current.setStyle(currentStyle);
 
-      // Re-add data points and polygons after style changes
+      // Re-add data after style changes
       map.current.once("style.load", () => {
         addDataPoints();
         addPolygons();
+
+        // Re-add active GIS layers
+        if (currentGisLayers.wilayahAdministrasi) {
+          addWilayahAdministrasi();
+        }
+        if (currentGisLayers.sungai) {
+          addSungai();
+        }
+        if (currentGisLayers.curahHujan) {
+          addCurahHujan();
+        }
       });
     }
   };
 
   const addMapControls = () => {
-    // Add navigation controls (zoom in/out, rotation)
+    // 1. Navigation (zoom, rotate)
     map.current.addControl(new maplibregl.NavigationControl(), "top-right");
 
-    // Add scale control
+    // 2. Scale
     map.current.addControl(new maplibregl.ScaleControl(), "bottom-left");
 
-    // Add fullscreen control
+    // 3. Fullscreen
     map.current.addControl(new maplibregl.FullscreenControl(), "top-right");
+
+    // 4. Geolocate
+    map.current.addControl(
+      new maplibregl.GeolocateControl({
+        positionOptions: {
+          enableHighAccuracy: true,
+        },
+        trackUserLocation: true,
+        showUserHeading: true,
+      }),
+      "top-right"
+    );
   };
 
   const addDataPoints = () => {
@@ -401,11 +544,461 @@ const Dashboard = () => {
       });
     }, 1500);
   };
+  // Add these state variables to your existing state
+  const [gisLayers, setGisLayers] = useState({
+    wilayahAdministrasi: false,
+    sungai: false,
+    curahHujan: false,
+  });
+
+  // Add these functions to fetch and process GIS data
+
+  // Function to fetch wilayah administrasi data
+  const fetchWilayahAdministrasi = async () => {
+    try {
+      const response = await fetch(
+        `${HOST_API}/api/public/gis/wilayah-administrasi`
+      );
+      const data = await response.json();
+      return data.features || [];
+    } catch (error) {
+      console.error("Error fetching wilayah administrasi data:", error);
+      return [];
+    }
+  };
+
+  // Function to fetch sungai data
+  const fetchSungai = async () => {
+    try {
+      const response = await fetch(`${HOST_API}/api/public/gis/sungai`);
+      const data = await response.json();
+      return data.results?.features || [];
+    } catch (error) {
+      console.error("Error fetching sungai data:", error);
+      return [];
+    }
+  };
+
+  // Function to fetch curah hujan data
+  const fetchCurahHujan = async () => {
+    try {
+      const response = await fetch(`${HOST_API}/api/public/gis/curah-hujan`);
+      const data = await response.json();
+      return data.results?.features || [];
+    } catch (error) {
+      console.error("Error fetching curah hujan data:", error);
+      return [];
+    }
+  };
+
+  // Function to add wilayah administrasi polygons to map
+  const addWilayahAdministrasi = async () => {
+    if (!map.current) return;
+
+    // Remove existing layer and source if they exist
+    if (map.current.getLayer("wilayah-administrasi-layer")) {
+      map.current.removeLayer("wilayah-administrasi-layer");
+    }
+    if (map.current.getLayer("wilayah-administrasi-outline")) {
+      map.current.removeLayer("wilayah-administrasi-outline");
+    }
+    if (map.current.getSource("wilayah-administrasi-source")) {
+      map.current.removeSource("wilayah-administrasi-source");
+    }
+
+    const features = await fetchWilayahAdministrasi();
+
+    if (features.length === 0) return;
+
+    // Create a GeoJSON source
+    map.current.addSource("wilayah-administrasi-source", {
+      type: "geojson",
+      data: {
+        type: "FeatureCollection",
+        features: features,
+      },
+    });
+
+    // Add fill layer
+    map.current.addLayer({
+      id: "wilayah-administrasi-layer",
+      type: "fill",
+      source: "wilayah-administrasi-source",
+      layout: {},
+      paint: {
+        "fill-color": "#4F46E5",
+        "fill-opacity": 0.3,
+      },
+    });
+
+    // Add outline layer
+    map.current.addLayer({
+      id: "wilayah-administrasi-outline",
+      type: "line",
+      source: "wilayah-administrasi-source",
+      layout: {},
+      paint: {
+        "line-color": "#4338CA",
+        "line-width": 1.5,
+      },
+    });
+
+    // Add popup on click
+    map.current.on("click", "wilayah-administrasi-layer", (e) => {
+      const features = map.current.queryRenderedFeatures(e.point, {
+        layers: ["wilayah-administrasi-layer"],
+      });
+
+      if (features.length > 0) {
+        const props = features[0].properties;
+        new maplibregl.Popup()
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `
+          <div>
+            <h3 style="font-weight: bold;">${props.namobj || "N/A"}</h3>
+            <p>Kecamatan: ${props.wadmkc || "N/A"}</p>
+            <p>Kabupaten: ${props.wadmkk || "N/A"}</p>
+            <p>Provinsi: ${props.wadmpr || "N/A"}</p>
+          </div>
+        `
+          )
+          .addTo(map.current);
+      }
+    });
+
+    // Change cursor on hover
+    map.current.on("mouseenter", "wilayah-administrasi-layer", () => {
+      map.current.getCanvas().style.cursor = "pointer";
+    });
+
+    map.current.on("mouseleave", "wilayah-administrasi-layer", () => {
+      map.current.getCanvas().style.cursor = "";
+    });
+  };
+
+  // Function to add sungai (river) lines to map
+  const addSungai = async () => {
+    if (!map.current) return;
+
+    // Remove existing layer and source if they exist
+    if (map.current.getLayer("sungai-layer")) {
+      map.current.removeLayer("sungai-layer");
+    }
+    if (map.current.getSource("sungai-source")) {
+      map.current.removeSource("sungai-source");
+    }
+
+    const features = await fetchSungai();
+
+    if (features.length === 0) return;
+
+    // Create a GeoJSON source
+    map.current.addSource("sungai-source", {
+      type: "geojson",
+      data: {
+        type: "FeatureCollection",
+        features: features,
+      },
+    });
+
+    // Add line layer
+    map.current.addLayer({
+      id: "sungai-layer",
+      type: "line",
+      source: "sungai-source",
+      layout: {
+        "line-join": "round",
+        "line-cap": "round",
+      },
+      paint: {
+        "line-color": "#3B82F6",
+        "line-width": 2.5,
+        "line-opacity": 0.8,
+      },
+    });
+
+    // Add popup on click
+    map.current.on("click", "sungai-layer", (e) => {
+      const features = map.current.queryRenderedFeatures(e.point, {
+        layers: ["sungai-layer"],
+      });
+
+      if (features.length > 0) {
+        const props = features[0].properties;
+        new maplibregl.Popup()
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `
+          <div>
+            <h3 style="font-weight: bold;">${props.namobj || "Sungai"}</h3>
+            <p>Tipe: ${props.tipsng || "N/A"}</p>
+            <p>Kelas: ${props.klssng || "N/A"}</p>
+            <p>Nama Daerah Aliran: ${props.namda || "N/A"}</p>
+          </div>
+        `
+          )
+          .addTo(map.current);
+      }
+    });
+
+    // Change cursor on hover
+    map.current.on("mouseenter", "sungai-layer", () => {
+      map.current.getCanvas().style.cursor = "pointer";
+    });
+
+    map.current.on("mouseleave", "sungai-layer", () => {
+      map.current.getCanvas().style.cursor = "";
+    });
+  };
+
+  // Function to add curah hujan (rainfall) data to map
+  const addCurahHujan = async () => {
+    if (!map.current) return;
+
+    // Remove existing layer and source if they exist
+    if (map.current.getLayer("curah-hujan-layer")) {
+      map.current.removeLayer("curah-hujan-layer");
+    }
+    if (map.current.getLayer("curah-hujan-outline")) {
+      map.current.removeLayer("curah-hujan-outline");
+    }
+    if (map.current.getSource("curah-hujan-source")) {
+      map.current.removeSource("curah-hujan-source");
+    }
+
+    const features = await fetchCurahHujan();
+
+    if (features.length === 0) return;
+
+    // Create a GeoJSON source
+    map.current.addSource("curah-hujan-source", {
+      type: "geojson",
+      data: {
+        type: "FeatureCollection",
+        features: features,
+      },
+    });
+
+    // Function to get color based on gridcode (rainfall intensity)
+    const getRainfallColor = (gridcode) => {
+      switch (gridcode) {
+        case 1:
+          return "#BFDBFE"; // Light blue - low rainfall
+        case 2:
+          return "#93C5FD";
+        case 3:
+          return "#60A5FA";
+        case 4:
+          return "#3B82F6";
+        case 5:
+          return "#2563EB"; // Dark blue - heavy rainfall
+        default:
+          return "#DBEAFE";
+      }
+    };
+
+    // Add fill layer with data-driven styling
+    map.current.addLayer({
+      id: "curah-hujan-layer",
+      type: "fill",
+      source: "curah-hujan-source",
+      layout: {},
+      paint: {
+        "fill-color": [
+          "match",
+          ["get", "gridcode"],
+          1,
+          "#BFDBFE",
+          2,
+          "#93C5FD",
+          3,
+          "#60A5FA",
+          4,
+          "#3B82F6",
+          5,
+          "#2563EB",
+          "#DBEAFE", // default
+        ],
+        "fill-opacity": 0.6,
+      },
+    });
+
+    // Add outline layer
+    map.current.addLayer({
+      id: "curah-hujan-outline",
+      type: "line",
+      source: "curah-hujan-source",
+      layout: {},
+      paint: {
+        "line-color": "#1E40AF",
+        "line-width": 1,
+      },
+    });
+
+    // Add popup on click
+    map.current.on("click", "curah-hujan-layer", (e) => {
+      const features = map.current.queryRenderedFeatures(e.point, {
+        layers: ["curah-hujan-layer"],
+      });
+
+      if (features.length > 0) {
+        const props = features[0].properties;
+        const intensityLabels = {
+          1: "Sangat Rendah",
+          2: "Rendah",
+          3: "Sedang",
+          4: "Tinggi",
+          5: "Sangat Tinggi",
+        };
+
+        new maplibregl.Popup()
+          .setLngLat(e.lngLat)
+          .setHTML(
+            `
+          <div>
+            <h3 style="font-weight: bold;">Curah Hujan</h3>
+            <p>Intensitas: ${intensityLabels[props.gridcode] || "N/A"}</p>
+            <p>Grid Code: ${props.gridcode || "N/A"}</p>
+          </div>
+        `
+          )
+          .addTo(map.current);
+      }
+    });
+
+    // Change cursor on hover
+    map.current.on("mouseenter", "curah-hujan-layer", () => {
+      map.current.getCanvas().style.cursor = "pointer";
+    });
+
+    map.current.on("mouseleave", "curah-hujan-layer", () => {
+      map.current.getCanvas().style.cursor = "";
+    });
+  };
+
+  // Function to toggle GIS layers
+  const toggleGisLayer = (layerName) => {
+    setGisLayers((prev) => {
+      const newState = { ...prev, [layerName]: !prev[layerName] };
+
+      // If turning on a layer, add it to the map
+      if (newState[layerName]) {
+        if (layerName === "wilayahAdministrasi") {
+          addWilayahAdministrasi();
+        } else if (layerName === "sungai") {
+          addSungai();
+        } else if (layerName === "curahHujan") {
+          addCurahHujan();
+        }
+      } else {
+        // If turning off a layer, remove it from the map
+        if (layerName === "wilayahAdministrasi") {
+          if (map.current.getLayer("wilayah-administrasi-layer")) {
+            map.current.removeLayer("wilayah-administrasi-layer");
+          }
+          if (map.current.getLayer("wilayah-administrasi-outline")) {
+            map.current.removeLayer("wilayah-administrasi-outline");
+          }
+          if (map.current.getSource("wilayah-administrasi-source")) {
+            map.current.removeSource("wilayah-administrasi-source");
+          }
+        } else if (layerName === "sungai") {
+          if (map.current.getLayer("sungai-layer")) {
+            map.current.removeLayer("sungai-layer");
+          }
+          if (map.current.getSource("sungai-source")) {
+            map.current.removeSource("sungai-source");
+          }
+        } else if (layerName === "curahHujan") {
+          if (map.current.getLayer("curah-hujan-layer")) {
+            map.current.removeLayer("curah-hujan-layer");
+          }
+          if (map.current.getLayer("curah-hujan-outline")) {
+            map.current.removeLayer("curah-hujan-outline");
+          }
+          if (map.current.getSource("curah-hujan-source")) {
+            map.current.removeSource("curah-hujan-source");
+          }
+        }
+      }
+
+      return newState;
+    });
+  };
+
+  // Update the GIS data legend with new layer information
+  const gisLayerLegend = [
+    {
+      id: "wilayah",
+      name: "Wilayah Administrasi",
+      color: "#4F46E5",
+      enabled: gisLayers.wilayahAdministrasi,
+    },
+    {
+      id: "sungai",
+      name: "Sungai",
+      color: "#3B82F6",
+      enabled: gisLayers.sungai,
+    },
+    {
+      id: "curah-hujan-1",
+      name: "Curah Hujan - Rendah",
+      color: "#BFDBFE",
+      enabled: gisLayers.curahHujan,
+    },
+    {
+      id: "curah-hujan-3",
+      name: "Curah Hujan - Sedang",
+      color: "#60A5FA",
+      enabled: gisLayers.curahHujan,
+    },
+    {
+      id: "curah-hujan-5",
+      name: "Curah Hujan - Tinggi",
+      color: "#2563EB",
+      enabled: gisLayers.curahHujan,
+    },
+  ];
 
   const handleLogout = () => {
     localStorage.removeItem("user");
     window.location.href = "/";
   };
+
+  // Map stats data to the format needed for the UI
+  const statsCards = [
+    {
+      title: "Wilayah Administrasi",
+      value: statsData.wilayahAdministrasi.loading
+        ? "Loading..."
+        : statsData.wilayahAdministrasi.count.toLocaleString(),
+      change: statsData.wilayahAdministrasi.change,
+      isUp: statsData.wilayahAdministrasi.isUp,
+    },
+    {
+      title: "Sungai",
+      value: statsData.sungai.loading
+        ? "Loading..."
+        : statsData.sungai.count.toLocaleString(),
+      change: statsData.sungai.change,
+      isUp: statsData.sungai.isUp,
+    },
+    {
+      title: "Curah Hujan",
+      value: statsData.curahHujan.loading
+        ? "Loading..."
+        : statsData.curahHujan.count.toLocaleString(),
+      change: statsData.curahHujan.change,
+      isUp: statsData.curahHujan.isUp,
+    },
+    {
+      title: "Map Updates",
+      value: statsData.mapUpdates.count.toLocaleString(),
+      change: statsData.mapUpdates.change,
+      isUp: statsData.mapUpdates.isUp,
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -434,7 +1027,7 @@ const Dashboard = () => {
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         {/* Stats cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {stats.map((stat, index) => (
+          {statsCards.map((stat, index) => (
             <div
               key={index}
               className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg"
@@ -465,13 +1058,15 @@ const Dashboard = () => {
                       <div className="text-2xl font-semibold text-gray-900 dark:text-white">
                         {stat.value}
                       </div>
-                      <div
-                        className={`ml-2 flex items-baseline text-sm font-semibold ${
-                          stat.isUp ? "text-green-600" : "text-red-600"
-                        }`}
-                      >
-                        {stat.change}
-                      </div>
+                      {!statsData.wilayahAdministrasi.loading && (
+                        <div
+                          className={`ml-2 flex items-baseline text-sm font-semibold ${
+                            stat.isUp ? "text-green-600" : "text-red-600"
+                          }`}
+                        >
+                          {stat.change}
+                        </div>
+                      )}
                     </dd>
                   </div>
                 </div>
@@ -530,6 +1125,36 @@ const Dashboard = () => {
                   >
                     Boundaries
                   </button>
+                  <button
+                    className={`px-3 py-1 rounded text-xs font-medium ${
+                      gisLayers.wilayahAdministrasi
+                        ? "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200"
+                        : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                    }`}
+                    onClick={() => toggleGisLayer("wilayahAdministrasi")}
+                  >
+                    Wilayah Administrasi
+                  </button>
+                  <button
+                    className={`px-3 py-1 rounded text-xs font-medium ${
+                      gisLayers.sungai
+                        ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                        : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                    }`}
+                    onClick={() => toggleGisLayer("sungai")}
+                  >
+                    Sungai
+                  </button>
+                  <button
+                    className={`px-3 py-1 rounded text-xs font-medium ${
+                      gisLayers.curahHujan
+                        ? "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200"
+                        : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                    }`}
+                    onClick={() => toggleGisLayer("curahHujan")}
+                  >
+                    Curah Hujan
+                  </button>
                 </div>
               </div>
               <div className="p-4">
@@ -583,6 +1208,7 @@ const Dashboard = () => {
                     Map Legend
                   </h4>
                   <div className="grid grid-cols-2 gap-2">
+                    {/* Existing feature types */}
                     {featureTypes.map((type) => (
                       <div key={type.id} className="flex items-center">
                         <div
@@ -594,6 +1220,21 @@ const Dashboard = () => {
                         </span>
                       </div>
                     ))}
+
+                    {/* GIS data layer legend items */}
+                    {gisLayerLegend
+                      .filter((item) => item.enabled)
+                      .map((layer) => (
+                        <div key={layer.id} className="flex items-center">
+                          <div
+                            className="h-3 w-3 rounded mr-2"
+                            style={{ backgroundColor: layer.color }}
+                          ></div>
+                          <span className="text-xs text-gray-600 dark:text-gray-400">
+                            {layer.name}
+                          </span>
+                        </div>
+                      ))}
                   </div>
                 </div>
               </div>
