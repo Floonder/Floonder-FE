@@ -74,24 +74,7 @@ const Feature = () => {
   ];
 
   return (
-    <section className="relative bg-[#0F0F0F] text-white py-16 md:py-24 px-4 overflow-hidden">
-      {/* Background Gradient Circles */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute -top-1/4 -left-1/4 w-[600px] h-[600px] 
-          bg-gradient-to-r from-cyan-500/20 via-blue-600/10 to-transparent 
-          rounded-full blur-3xl opacity-50"
-        ></div>
-        <div
-          className="absolute -bottom-1/4 -right-1/4 w-[600px] h-[600px] 
-          bg-gradient-to-r from-cyan-500/20 via-blue-600/10 to-transparent 
-          rounded-full blur-3xl opacity-50"
-        ></div>
-      </div>
-
-      {/* Subtle Grid Background */}
-      <div className="absolute inset-0 bg-grid-white/5 opacity-10 pointer-events-none"></div>
-
+    <section className="relative text-white py-16 md:py-24 px-4 overflow-hidden">
       <div className="container max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-8 md:mb-12">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">

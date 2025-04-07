@@ -8,24 +8,7 @@ const FAQ = () => {
   };
 
   return (
-    <section className="relative bg-[#0F0F0F] text-white flex items-center justify-center px-6 py-1 overflow-hidden">
-      {/* Background Gradient Circles */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute -top-1/4 -left-1/4 w-[600px] h-[600px] 
-          bg-gradient-to-r from-cyan-500/20 via-blue-600/10 to-transparent 
-          rounded-full blur-3xl opacity-50"
-        ></div>
-        <div
-          className="absolute -bottom-1/4 -right-1/4 w-[600px] h-[600px] 
-          bg-gradient-to-r from-cyan-500/20 via-blue-600/10 to-transparent 
-          rounded-full blur-3xl opacity-50"
-        ></div>
-      </div>
-
-      {/* Subtle Grid Background */}
-      <div className="absolute inset-0 bg-grid-white/5 opacity-10 pointer-events-none"></div>
-
+    <section className="relative text-white flex items-center justify-center px-6 py-1 overflow-hidden">
       <div className="relative z-10 max-w-[85rem] w-full px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
         <div className="grid md:grid-cols-5 gap-10">
           <div className="md:col-span-2">

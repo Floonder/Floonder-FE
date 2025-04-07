@@ -10,24 +10,7 @@ const Testimoni = () => {
   });
 
   return (
-    <section className="relative bg-[#0F0F0F] text-white  flex items-center justify-center px-6 py-1 overflow-hidden">
-      {/* Background Gradient Circles */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div
-          className="absolute -top-1/4 -left-1/4 w-[600px] h-[600px] 
-          bg-gradient-to-r from-cyan-500/20 via-blue-600/10 to-transparent 
-          rounded-full blur-3xl opacity-50"
-        ></div>
-        <div
-          className="absolute -bottom-1/4 -right-1/4 w-[600px] h-[600px] 
-          bg-gradient-to-r from-cyan-500/20 via-blue-600/10 to-transparent 
-          rounded-full blur-3xl opacity-50"
-        ></div>
-      </div>
-
-      {/* Subtle Grid Background */}
-      <div className="absolute inset-0 bg-grid-white/5 opacity-10 pointer-events-none"></div>
-
+    <section className="relative text-white flex items-center justify-center px-6 py-1 overflow-hidden">
       <div className="relative z-10 text-center max-w-4xl w-full">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:items-center lg:gap-24">
           <div className="max-w-xl text-center sm:text-left">
