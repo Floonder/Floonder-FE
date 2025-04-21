@@ -9,9 +9,18 @@ import {
   ZoomOutIcon,
   MapIcon,
   CubeIcon,
-  ChevronDownIcon,
   XIcon,
 } from "../components/icon/Icon";
+import {
+  XCircle as XCircleIcon,
+  ChevronUp as ChevronUpIcon,
+  ChevronDown as ChevronDownIcon,
+  RefreshCw as RefreshCwIcon,
+  MapPin as MapPinIcon,
+  Droplet as DropletIcon,
+  Activity as ActivityIcon,
+  Loader as LoaderIcon,
+} from "lucide-react";
 
 function Maps() {
   const MAP_SERVICE_KEY = import.meta.env.VITE_MAP_SERVICE_KEY;
@@ -25,12 +34,13 @@ function Maps() {
   const [administrativeData, setAdministrativeData] = useState([]);
   const [showAdministrativeBoundaries, setShowAdministrativeBoundaries] =
     useState(false);
-  const [rainfallData, setRainfallData] = useState([]);
-  const [showRainfall, setShowRainfall] = useState(false);
   const [predictionData, setPredictionData] = useState([]);
   const [showPrediction, setShowPrediction] = useState(false);
   const [selectedFeature, setSelectedFeature] = useState(null);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
+  const [isPanelExpanded, setIsPanelExpanded] = useState(true);
+  const [mapStyleMenuOpen, setMapStyleMenuOpen] = useState(false);
+  const [isSearching] = useState(false);
 
   // Map style state and options
   const [mapStyle, setMapStyle] = useState("dark"); // Default style
@@ -42,10 +52,31 @@ function Maps() {
   };
 
   useEffect(() => {
+    map.current = new maplibregl.Map({
+      container: mapContainer.current,
+      style: mapStyles[mapStyle],
+      center: [107.6098, -6.9149],
+      zoom: 15.5,
+      pitch: is3DMode ? 60 : 0,
+    });
+
+    map.current.on("load", () => {
+      console.log("map loaded");
+
+      map.current.addControl(
+        new maplibregl.NavigationControl(),
+        "bottom-right"
+      );
+    });
+
+    return () => map.current?.remove();
+  }, []);
+
+  useEffect(() => {
     const fetchRiverData = async () => {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_HOST_API}/api/public/gis/sungai`,
+          `${import.meta.env.VITE_HOST_API}/api/public/gis/sungai?limit=1000`,
           {
             method: "GET",
             headers: {
@@ -93,28 +124,6 @@ function Maps() {
     fetchRiverData();
   }, []);
 
-  // Initialize map
-  useEffect(() => {
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: mapStyles[mapStyle],
-      center: [107.6098, -6.9149],
-      zoom: 15.5,
-      pitch: is3DMode ? 60 : 0,
-    });
-
-    map.current.on("load", () => {
-      console.log("map loaded");
-
-      map.current.addControl(
-        new maplibregl.NavigationControl(),
-        "bottom-right"
-      );
-    });
-
-    return () => map.current?.remove();
-  }, []);
-
   // Handle river data rendering
   useEffect(() => {
     if (map.current && riverData.length > 0 && showRivers) {
@@ -140,8 +149,8 @@ function Maps() {
         source: "rivers",
         paint: {
           "line-color": "#FF0000",
-          "line-width": 3,
-          "line-opacity": 0.7,
+          "line-width": 10,
+          "line-opacity": 1,
         },
       });
     } else if (map.current && map.current.getSource("rivers")) {
@@ -157,7 +166,7 @@ function Maps() {
         const response = await fetch(
           `${
             import.meta.env.VITE_HOST_API
-          }/api/public/gis/wilayah-administrasi`,
+          }/api/public/gis/wilayah-administrasi?kota=Kota Bandung`,
           {
             method: "GET",
             headers: {
@@ -260,164 +269,14 @@ function Maps() {
     }
   }, [administrativeData, showAdministrativeBoundaries]);
 
-  useEffect(() => {
-    const fetchRainfallData = async () => {
-      try {
-        const response = await fetch(
-          `${
-            import.meta.env.VITE_HOST_API
-          }/api/public/gis/curah-hujan?limit=10000`,
-          {
-            method: "GET",
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP Error! Status: ${response.status}`);
-        }
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          const text = await response.text();
-          console.error("Unexpected response content:", text);
-          throw new Error("Response is not JSON");
-        }
-        const data = await response.json();
-        const rainfallFeatures = data.results?.features;
-        if (!Array.isArray(rainfallFeatures)) {
-          throw new Error("Expected an array of rainfall features");
-        }
-        const validRainfallData = rainfallFeatures.filter(
-          (feature) =>
-            feature.type === "Feature" &&
-            feature.geometry &&
-            feature.geometry.type === "Polygon" &&
-            feature.geometry.coordinates
-        );
-        setRainfallData(validRainfallData);
-        // console.log("Fetched Rainfall Data:", validRainfallData);
-
-        // Add a debug message to see if any features were filtered out
-        if (validRainfallData.length !== rainfallFeatures.length) {
-          console.warn(
-            `Filtered out ${
-              rainfallFeatures.length - validRainfallData.length
-            } invalid features`
-          );
-        }
-      } catch (error) {
-        console.error("Error fetching rainfall data:", error.message);
-      }
-    };
-    fetchRainfallData();
-  }, []);
-
-  const addRainfallLayers = () => {
-    if (!map.current || !map.current.loaded()) {
-      console.warn("Map not ready yet, cannot add rainfall layers");
-      return;
-    }
-
-    try {
-      if (map.current.getSource("rainfall")) {
-        map.current.removeLayer("rainfall-fill");
-        map.current.removeLayer("rainfall-line");
-        map.current.removeSource("rainfall");
-      }
-
-      console.log("Adding rainfall source with features:", rainfallData.length);
-
-      // Add rainfall data as a source
-      map.current.addSource("rainfall", {
-        type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features: rainfallData,
-        },
-      });
-
-      // Add rainfall fill layer
-      map.current.addLayer({
-        id: "rainfall-fill",
-        type: "fill",
-        source: "rainfall",
-        paint: {
-          "fill-color": [
-            "step",
-            ["min", ["get", "gridcode"], 5], // Cap at 5, anything higher becomes 5
-            "#90EE90", // Light green for level 1 (Very Low)
-            2,
-            "#32CD32", // Lime green for level 2 (Low)
-            3,
-            "#228B22", // Forest green for level 3 (Moderate)
-            4,
-            "#FFA500", // Orange for level 4 (High)
-            5,
-            "#FF0000", // Red for level 5 (Very High) and anything above
-          ],
-          "fill-opacity": 0.5,
-        },
-      });
-
-      map.current.addLayer({
-        id: "rainfall-line",
-        type: "line",
-        source: "rainfall",
-        paint: {
-          "line-color": "#000000",
-          "line-width": 1,
-          "line-opacity": 0.5,
-        },
-      });
-
-      const layerAdded = map.current.getLayer("rainfall-fill") !== undefined;
-      console.log("Rainfall layer added successfully:", layerAdded);
-
-      if (rainfallData.length > 0) {
-        const firstFeature = rainfallData[0];
-        const coords = firstFeature.geometry.coordinates[0][0];
-
-        console.log("Flying to rainfall coordinates:", coords);
-        map.current.flyTo({
-          center: [coords[0], coords[1]],
-          zoom: 10,
-          essential: true,
-        });
-
-        // Log the bounds info
-        const bounds = map.current.getBounds();
-        console.log("Current map bounds after flying:", bounds.toString());
-      }
-    } catch (error) {
-      console.error("Error adding rainfall layers:", error);
-    }
-  };
-
-  useEffect(() => {
-    console.log("Rainfall Data:", rainfallData);
-    console.log("Show Rainfall:", showRainfall);
-
-    if (map.current && map.current.loaded() && rainfallData.length > 0) {
-      if (showRainfall) {
-        console.log("Attempting to add rainfall layer");
-        addRainfallLayers();
-      } else if (map.current.getSource("rainfall")) {
-        // Remove rainfall layers if hidden
-        console.log("Removing rainfall layers");
-        map.current.removeLayer("rainfall-fill");
-        map.current.removeLayer("rainfall-line");
-        map.current.removeSource("rainfall");
-      }
-    }
-  }, [rainfallData, showRainfall]);
-
+  // Updated to fetch and filter Point geometry type for flood prediction data
   useEffect(() => {
     const fetchPredictionData = async () => {
       try {
         const response = await fetch(
-          `${import.meta.env.VITE_HOST_API}/api/public/gis/prediksi`,
+          `${
+            import.meta.env.VITE_HOST_API
+          }/api/public/gis/flood-point?limit=1000`,
           {
             method: "GET",
             headers: {
@@ -443,14 +302,16 @@ function Maps() {
         if (!Array.isArray(predictionFeatures)) {
           throw new Error("Expected an array of prediction features");
         }
+
+        // Updated to filter for Point geometry type
         const validPredictionData = predictionFeatures.filter(
           (feature) =>
             feature.type === "Feature" &&
             feature.geometry &&
-            (feature.geometry.type === "Polygon" ||
-              feature.geometry.type === "MultiPolygon") &&
+            feature.geometry.type === "Point" &&
             feature.geometry.coordinates
         );
+
         setPredictionData(validPredictionData);
         // console.log("Fetched Prediction Data:", validPredictionData);
       } catch (error) {
@@ -460,12 +321,13 @@ function Maps() {
     fetchPredictionData();
   }, []);
 
+  // Updated to render point data for flood predictions
   useEffect(() => {
     if (map.current && predictionData.length > 0 && showPrediction) {
       // Remove existing prediction layer if it exists
       if (map.current.getSource("prediction")) {
-        map.current.removeLayer("prediction-fill");
-        map.current.removeLayer("prediction-line");
+        map.current.removeLayer("prediction-circle");
+        map.current.removeLayer("prediction-circle-stroke");
         map.current.removeSource("prediction");
       }
 
@@ -478,42 +340,63 @@ function Maps() {
         },
       });
 
+      // Add circle layer for points
       map.current.addLayer({
-        id: "prediction-fill",
-        type: "fill",
+        id: "prediction-circle",
+        type: "circle",
         source: "prediction",
         paint: {
-          "fill-color": [
-            "interpolate",
-            ["linear"],
-            ["get", "risk_level"], // Assuming there's a risk_level property
-            1,
+          "circle-radius": 10,
+          // Map risk levels using the string values from the data
+          "circle-color": [
+            "match",
+            ["get", "risk_level"],
+            "Rendah",
             "#FFFF00", // Yellow for low risk
-            2,
+            "Sedang",
             "#FFA500", // Orange for medium risk
-            3,
+            "Rawan",
             "#FF4500", // OrangeRed for high risk
-            4,
+            "Bahaya",
             "#FF0000", // Red for very high risk
-            5,
+            "Sangat Bahaya",
             "#8B0000", // DarkRed for extreme risk
+            "#BBBBBB", // Default gray
           ],
-          "fill-opacity": 0.6,
+          "circle-opacity": 0.7,
         },
       });
+
+      // Add stroke layer for points
       map.current.addLayer({
-        id: "prediction-line",
-        type: "line",
+        id: "prediction-circle-stroke",
+        type: "circle",
         source: "prediction",
         paint: {
-          "line-color": "#000000",
-          "line-width": 1,
-          "line-opacity": 0.7,
+          "circle-radius": 11,
+          "circle-color": "#000000",
+          "circle-opacity": 0,
+          "circle-stroke-width": 1,
+          "circle-stroke-color": "#000000",
         },
+      });
+
+      // Add hover effect
+      map.current.on("mouseenter", "prediction-circle", () => {
+        map.current.getCanvas().style.cursor = "pointer";
+      });
+
+      map.current.on("mouseleave", "prediction-circle", () => {
+        map.current.getCanvas().style.cursor = "";
       });
     } else if (map.current && map.current.getSource("prediction")) {
-      map.current.removeLayer("prediction-fill");
-      map.current.removeLayer("prediction-line");
+      // Clean up layers if prediction should not be shown
+      if (map.current.getLayer("prediction-circle")) {
+        map.current.removeLayer("prediction-circle");
+      }
+      if (map.current.getLayer("prediction-circle-stroke")) {
+        map.current.removeLayer("prediction-circle-stroke");
+      }
       map.current.removeSource("prediction");
     }
   }, [predictionData, showPrediction]);
@@ -546,13 +429,12 @@ function Maps() {
           return;
         }
 
-        // Query features from all active layers at click point
+        // Updated to include prediction-circle layer
         const features = map.current.queryRenderedFeatures(e.point, {
           layers: [
             "river-lines",
             "administrative-boundaries-fill",
-            "rainfall-fill",
-            "prediction-fill",
+            "prediction-circle",
           ].filter((layer) => map.current.getLayer(layer)),
         });
 
@@ -678,83 +560,17 @@ function Maps() {
     }
   }, [administrativeData, showAdministrativeBoundaries]);
 
-  // Handle rainfall layer with click interaction
-  useEffect(() => {
-    if (map.current && rainfallData.length > 0 && showRainfall) {
-      if (map.current.getSource("rainfall")) {
-        map.current.removeLayer("rainfall-fill");
-        map.current.removeLayer("rainfall-line");
-        map.current.removeSource("rainfall");
-      }
-
-      // Add rainfall data as a source
-      map.current.addSource("rainfall", {
-        type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features: rainfallData,
-        },
-      });
-
-      map.current.addLayer({
-        id: "rainfall-fill",
-        type: "fill",
-        source: "rainfall",
-        paint: {
-          "fill-color": [
-            "interpolate",
-            ["linear"],
-            ["get", "gridcode"],
-            1,
-            "#90EE90", // Light green for low rainfall
-            2,
-            "#32CD32", // Lime green for moderate rainfall
-            3,
-            "#228B22", // Forest green for high rainfall
-            4,
-            "#006400", // Dark green for very high rainfall
-            5,
-            "#013220", // Darkest green for extreme rainfall
-          ],
-          "fill-opacity": 0.5,
-        },
-      });
-
-      // Add rainfall boundaries layer
-      map.current.addLayer({
-        id: "rainfall-line",
-        type: "line",
-        source: "rainfall",
-        paint: {
-          "line-color": "#000000",
-          "line-width": 1,
-          "line-opacity": 0.5,
-        },
-      });
-
-      // Add hover effect
-      map.current.on("mouseenter", "rainfall-fill", () => {
-        map.current.getCanvas().style.cursor = "pointer";
-      });
-
-      map.current.on("mouseleave", "rainfall-fill", () => {
-        map.current.getCanvas().style.cursor = "";
-      });
-    } else if (map.current && map.current.getSource("rainfall")) {
-      // Remove rainfall layers if hidden
-      map.current.removeLayer("rainfall-fill");
-      map.current.removeLayer("rainfall-line");
-      map.current.removeSource("rainfall");
-    }
-  }, [rainfallData, showRainfall]);
-
-  // Handle prediction layer with click interaction
+  // Handle prediction layer with click interaction for points
   useEffect(() => {
     if (map.current && predictionData.length > 0 && showPrediction) {
       // Remove existing prediction layer if it exists
       if (map.current.getSource("prediction")) {
-        map.current.removeLayer("prediction-fill");
-        map.current.removeLayer("prediction-line");
+        if (map.current.getLayer("prediction-circle")) {
+          map.current.removeLayer("prediction-circle");
+        }
+        if (map.current.getLayer("prediction-circle-stroke")) {
+          map.current.removeLayer("prediction-circle-stroke");
+        }
         map.current.removeSource("prediction");
       }
 
@@ -767,56 +583,77 @@ function Maps() {
         },
       });
 
+      // Add circle layer for points
       map.current.addLayer({
-        id: "prediction-fill",
-        type: "fill",
+        id: "prediction-circle",
+        type: "circle",
         source: "prediction",
         paint: {
-          "fill-color": [
-            "interpolate",
-            ["linear"],
-            ["get", "risk_level"], // Assuming there's a risk_level property
-            1,
+          "circle-radius": 10,
+          // Map risk levels using the string values from the data
+          "circle-color": [
+            "match",
+            ["get", "risk_level"],
+            "Rendah",
             "#FFFF00", // Yellow for low risk
-            2,
+            "Sedang",
             "#FFA500", // Orange for medium risk
-            3,
+            "Rawan",
             "#FF4500", // OrangeRed for high risk
-            4,
+            "Bahaya",
             "#FF0000", // Red for very high risk
-            5,
+            "Sangat Bahaya",
             "#8B0000", // DarkRed for extreme risk
+            "#BBBBBB", // Default gray
           ],
-          "fill-opacity": 0.6,
+          "circle-opacity": 0.7,
         },
       });
+
+      // Add stroke layer for points
       map.current.addLayer({
-        id: "prediction-line",
-        type: "line",
+        id: "prediction-circle-stroke",
+        type: "circle",
         source: "prediction",
         paint: {
-          "line-color": "#000000",
-          "line-width": 1,
-          "line-opacity": 0.7,
+          "circle-radius": 11,
+          "circle-color": "#000000",
+          "circle-opacity": 0,
+          "circle-stroke-width": 1,
+          "circle-stroke-color": "#000000",
         },
       });
 
       // Add hover effect
-      map.current.on("mouseenter", "prediction-fill", () => {
+      map.current.on("mouseenter", "prediction-circle", () => {
         map.current.getCanvas().style.cursor = "pointer";
       });
 
-      map.current.on("mouseleave", "prediction-fill", () => {
+      map.current.on("mouseleave", "prediction-circle", () => {
         map.current.getCanvas().style.cursor = "";
       });
+
+      // Add click event for showing popup with details
+      map.current.on("click", "prediction-circle", (e) => {
+        if (e.features && e.features.length > 0) {
+          const feature = e.features[0];
+          setSelectedFeature(feature);
+          setShowInfoPanel(true);
+        }
+      });
     } else if (map.current && map.current.getSource("prediction")) {
-      map.current.removeLayer("prediction-fill");
-      map.current.removeLayer("prediction-line");
+      // Clean up layers
+      if (map.current.getLayer("prediction-circle")) {
+        map.current.removeLayer("prediction-circle");
+      }
+      if (map.current.getLayer("prediction-circle-stroke")) {
+        map.current.removeLayer("prediction-circle-stroke");
+      }
       map.current.removeSource("prediction");
     }
   }, [predictionData, showPrediction]);
 
-  // Function to format feature properties for display
+  // Function to format feature properties for display - updated for prediction-circle
   const formatFeatureInfo = (feature) => {
     if (!feature) return null;
 
@@ -842,86 +679,76 @@ function Maps() {
 
       case "administrative-boundaries-fill":
         return {
-          title: properties.namobj || "Administrative Area",
+          title: properties.desa || "Administrative Area",
           details: [
-            { label: "Name", value: properties.namobj || "Unknown" },
+            { label: "Name", value: properties.desa || "Unknown" },
             { label: "Type", value: properties.remark || "Region" },
-            { label: "District", value: properties.wadmkc || "N/A" },
-            { label: "Regency", value: properties.wadmkk || "N/A" },
-            { label: "Province", value: properties.wadmpr || "N/A" },
+            { label: "District", value: properties.kecamatan || "N/A" },
+            { label: "Regency", value: properties.wilayah || "N/A" },
+            { label: "Province", value: properties.provinsi || "N/A" },
             {
               label: "Area",
               value: properties.shape_area
                 ? `${(properties.shape_area * 10000).toFixed(2)} km²`
                 : "N/A",
             },
+            {
+              label: "Rainfall",
+              value: properties.curah_hujan
+                ? Array.isArray(properties.curah_hujan)
+                  ? properties.curah_hujan.join(", ")
+                  : properties.curah_hujan
+                : "N/A",
+            },
+            { label: "Month", value: properties.month || "N/A" },
           ],
         };
 
-      case "rainfall-fill": {
-        // Define rainfall levels with handling for values over 5
-        const rainfallLevels = {
-          1: "Very Low",
-          2: "Low",
-          3: "Moderate",
-          4: "High",
-          5: "Very High",
+      // Updated for prediction-circle to match point data structure
+      case "prediction-circle": {
+        // Map Indonesian risk levels to English descriptions
+        const riskLevelMapping = {
+          Rendah: "Low",
+          Sedang: "Medium",
+          Rawan: "High",
+          Bahaya: "Very High",
+          "Sangat Bahaya": "Extreme",
         };
 
-        // Handle gridcode values higher than 5
-        const level = properties.gridcode > 5 ? 5 : properties.gridcode;
-        const levelText = rainfallLevels[level] || "Unknown";
-
-        return {
-          title: "Rainfall Data",
-          details: [
-            { label: "Grid Code", value: properties.gridcode || "N/A" },
-            {
-              label: "Level",
-              value: properties.gridcode ? levelText : "N/A",
-            },
-            {
-              label: "Amount",
-              value: "N/A",
-            },
-            { label: "Recorded", value: "N/A" },
-            {
-              label: "Location",
-              value: `Coordinates available in geometry object`,
-            },
-          ],
-        };
-      }
-
-      case "prediction-fill": {
-        // Map risk level to descriptive text
-        const riskLevels = {
-          1: "Very Low",
-          2: "Low",
-          3: "Moderate",
-          4: "High",
-          5: "Very High",
-        };
         return {
           title: "Flood Risk Prediction",
           details: [
             {
               label: "Risk Level",
               value: properties.risk_level
-                ? riskLevels[properties.risk_level] || "Unknown"
+                ? riskLevelMapping[properties.risk_level] ||
+                  properties.risk_level
                 : "N/A",
             },
             {
-              label: "Probability",
-              value: properties.probability
-                ? `${properties.probability}%`
-                : "N/A",
+              label: "Risk Score",
+              value: properties.risk_score || "N/A",
+            },
+            {
+              label: "Location",
+              value: `${properties.desa}, ${properties.kecamatan}, ${properties.wilayah}`,
             },
             {
               label: "Predicted For",
-              value: properties.prediction_date || "N/A",
+              value: `${properties.month} ${properties.year}`,
             },
-            { label: "Last Updated", value: properties.updated_at || "N/A" },
+            {
+              label: "Distance to River",
+              value: properties.dist_to_river
+                ? `${properties.dist_to_river.toFixed(2)} m`
+                : "N/A",
+            },
+            {
+              label: "Elevation",
+              value: properties.flood_elev
+                ? `${properties.flood_elev.toFixed(2)} m`
+                : "N/A",
+            },
           ],
         };
       }
@@ -966,7 +793,7 @@ function Maps() {
 
       const response = await fetch(geocodingEndpoint, {
         headers: {
-          "User-Agent": "YourAppName/1.0 (email@example.com)", // Optional but recommended
+          "User-Agent": "YourAppName/1.0 (email@example.com)",
         },
       });
       const data = await response.json();
@@ -1109,6 +936,19 @@ function Maps() {
       .addTo(map.current);
   };
 
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (mapStyleMenuOpen) {
+        setMapStyleMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [mapStyleMenuOpen]);
+
   return (
     <div className="flex flex-col h-screen">
       <Navbar className="z-20" />
@@ -1116,60 +956,6 @@ function Maps() {
       {/* Map container */}
       <div className="relative w-full h-screen">
         <div ref={mapContainer} className="w-full h-full" />
-
-        {/* Search bar */}
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4 z-10 mt-16">
-          <form onSubmit={handleSearch} className="relative">
-            <input
-              type="text"
-              placeholder="Search locations in West Java..."
-              className="w-full px-4 py-2 pr-20 rounded-lg shadow-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white text-gray-800"
-              value={searchQuery}
-              onChange={handleSearchInputChange}
-            />
-
-            {/* 👇 Suggestions dropdown */}
-            {suggestions.length > 0 && (
-              <ul className="absolute w-full mt-1 bg-white border border-gray-300 rounded shadow max-h-60 overflow-y-auto z-20">
-                {suggestions.map((item, index) => (
-                  <li
-                    key={index}
-                    onClick={() => {
-                      setSearchQuery(item.display_name);
-                      setSuggestions([]);
-                      handleSuggestionSelect(item);
-                    }}
-                    className="px-4 py-2 cursor-pointer hover:bg-gray-100"
-                  >
-                    {item.display_name}
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {/* Button group */}
-            <div className="absolute right-0 top-0 h-full flex">
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={clearSearch}
-                  className="h-full px-2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                  title="Clear search"
-                >
-                  <XIcon />
-                </button>
-              )}
-              <button
-                type="submit"
-                className="h-full px-3 bg-cyan-600 text-white rounded-r-lg hover:bg-cyan-700 focus:outline-none flex items-center"
-                title="Search"
-              >
-                <SearchIcon />
-              </button>
-            </div>
-          </form>
-        </div>
-
         {/* Controls container - your existing controls */}
         <div className="absolute top-20 right-4 z-10 flex flex-col gap-2">
           {/* 2D/3D toggle */}
@@ -1198,135 +984,426 @@ function Maps() {
           </button>
         </div>
 
-        {/* Combined Map Controls Panel */}
-        <div className="absolute top-40 left-4 z-10 bg-white rounded-lg shadow-lg p-2">
-          {/* Layers Section */}
-          <div className="mb-2">
-            <div className="flex items-center space-x-2 px-2 py-1 border-b border-gray-200">
-              <ChevronDownIcon />
-              <span className="font-medium">Layers</span>
+        {/* Enhanced Map Controls Panel */}
+        <div className="absolute top-20 left-4 z-10 bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
+          {/* Header with collapsible functionality */}
+          <div
+            className="bg-cyan-600 text-white px-3 py-2 flex justify-between items-center cursor-pointer"
+            onClick={() => setIsPanelExpanded(!isPanelExpanded)}
+          >
+            <div className="flex items-center space-x-2">
+              <MapIcon size={18} />
+              <span className="font-medium">Map Controls</span>
             </div>
-            <div className="mt-2 space-y-1">
-              <div className="flex items-center px-2 py-1 hover:bg-gray-100 rounded cursor-pointer">
-                <input
-                  type="checkbox"
-                  id="river"
-                  checked={showRivers}
-                  onChange={() => setShowRivers(!showRivers)}
-                  className="mr-2 cursor-pointer"
-                />
-                <label
-                  htmlFor="river"
-                  className={`text-sm cursor-pointer ${
-                    showRivers ? "text-blue-500 font-bold" : "text-black"
-                  }`}
-                >
-                  {showRivers ? "Hide Rivers" : "Show Rivers"}
-                </label>
-              </div>
-              <div className="flex items-center px-2 py-1 hover:bg-gray-100 rounded cursor-pointer">
-                <input
-                  type="checkbox"
-                  id="rainfall"
-                  checked={showRainfall}
-                  onChange={() => setShowRainfall(!showRainfall)}
-                  className="mr-2 cursor-pointer"
-                />
-                <label
-                  htmlFor="rainfall"
-                  className={`text-sm cursor-pointer ${
-                    showRainfall ? "text-blue-500 font-bold" : "text-black"
-                  }`}
-                >
-                  {showRainfall ? "Hide Rainfall" : "Show Rainfall"}
-                </label>
-              </div>
-              <div className="flex items-center px-2 py-1 hover:bg-gray-100 rounded cursor-pointer">
-                <input
-                  type="checkbox"
-                  id="district"
-                  checked={showAdministrativeBoundaries}
-                  onChange={() =>
-                    setShowAdministrativeBoundaries(
-                      !showAdministrativeBoundaries
-                    )
-                  }
-                  className="mr-2 cursor-pointer"
-                />
-                <label
-                  htmlFor="district"
-                  className={`text-sm cursor-pointer ${
-                    showAdministrativeBoundaries
-                      ? "text-blue-500 font-bold"
-                      : "text-black"
-                  }`}
-                >
-                  {showAdministrativeBoundaries
-                    ? "Hide Boundaries"
-                    : "Show Boundaries"}
-                </label>
-              </div>
-              <div className="flex items-center px-2 py-1 hover:bg-gray-100 rounded cursor-pointer">
-                <input
-                  type="checkbox"
-                  id="prediction"
-                  checked={showPrediction}
-                  onChange={() => setShowPrediction(!showPrediction)}
-                  className="mr-2 cursor-pointer"
-                />
-                <label
-                  htmlFor="prediction"
-                  className={`text-sm cursor-pointer ${
-                    showPrediction ? "text-blue-500 font-bold" : "text-black"
-                  }`}
-                >
-                  {showPrediction ? "Hide Prediction" : "Show Prediction"}
-                </label>
-              </div>
-            </div>
+            {isPanelExpanded ? (
+              <ChevronUpIcon size={18} />
+            ) : (
+              <ChevronDownIcon size={18} />
+            )}
           </div>
 
-          {/* Map Styles Section */}
-          <div>
-            <div className="flex items-center space-x-2 px-2 py-1 border-b border-gray-200">
-              <LayersIcon />
-              <span className="font-medium">Map Style</span>
+          {/* Panel Body - Collapsible */}
+          {isPanelExpanded && (
+            <div className="p-3">
+              {/* Search Section */}
+              <div className="mb-4">
+                <div className="flex items-center space-x-2 mb-2 text-cyan-700">
+                  <SearchIcon size={16} />
+                  <span className="font-medium">Search Locations</span>
+                </div>
+                <form onSubmit={handleSearch} className="relative">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search locations in West Java..."
+                      className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white text-gray-800 pr-10"
+                      value={searchQuery}
+                      onChange={handleSearchInputChange}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => (searchQuery ? clearSearch() : null)}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {searchQuery ? (
+                        <XCircleIcon size={18} />
+                      ) : (
+                        <SearchIcon size={18} />
+                      )}
+                    </button>
+
+                    {/* Animated loading indicator */}
+                    {isSearching && (
+                      <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
+                        <LoaderIcon
+                          size={18}
+                          className="animate-spin text-cyan-600"
+                        />
+                      </div>
+                    )}
+
+                    {/* Enhanced suggestions dropdown with animations */}
+                    {suggestions.length > 0 && (
+                      <ul className="absolute w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto z-20 animate-fadeIn">
+                        {suggestions.map((item, index) => (
+                          <li
+                            key={index}
+                            onClick={() => {
+                              setSearchQuery(item.display_name);
+                              setSuggestions([]);
+                              handleSuggestionSelect(item);
+                            }}
+                            className="px-4 py-2 cursor-pointer hover:bg-cyan-50 border-b border-gray-100 last:border-b-0 flex items-center"
+                          >
+                            <MapPinIcon
+                              size={16}
+                              className="mr-2 text-cyan-600"
+                            />
+                            <span>{item.display_name}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  {/* Button group - now side by side and more compact */}
+                  <div className="flex justify-between mt-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={clearSearch}
+                      className="flex-1 px-3 py-2 flex items-center justify-center gap-1 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:outline-none transition-colors"
+                      title="Reset search"
+                      disabled={!searchQuery}
+                    >
+                      <RefreshCwIcon size={16} />
+                      <span>Reset</span>
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 px-3 py-2 flex items-center justify-center gap-1 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 focus:outline-none transition-colors"
+                      title="Search"
+                      disabled={!searchQuery}
+                    >
+                      <SearchIcon size={16} />
+                      <span>Search</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Layers Section with improved toggles */}
+              <div className="mb-4">
+                <div className="flex items-center space-x-2 mb-2 pb-1 border-b border-gray-200 text-cyan-700">
+                  <LayersIcon size={16} />
+                  <span className="font-medium">Map Layers</span>
+                </div>
+
+                <div className="space-y-3 mt-2">
+                  {/* River Toggle - Enhanced */}
+                  <div className="flex items-center justify-between px-1 py-2 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div className="flex items-center">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          showRivers
+                            ? "bg-blue-100 text-blue-600"
+                            : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        <DropletIcon size={16} />
+                      </div>
+                      <label htmlFor="river" className="ml-2 cursor-pointer">
+                        <div className="font-medium text-sm">Rivers</div>
+                        <div className="text-xs text-gray-500">
+                          {showRivers ? "Visible on map" : "Hidden from view"}
+                        </div>
+                      </label>
+                    </div>
+                    <div className="relative inline-block w-12 align-middle select-none">
+                      <input
+                        type="checkbox"
+                        id="river"
+                        checked={showRivers}
+                        onChange={() => setShowRivers(!showRivers)}
+                        className="hidden"
+                      />
+                      <div
+                        className={`block w-12 h-6 rounded-full cursor-pointer transition-colors ${
+                          showRivers ? "bg-blue-500" : "bg-gray-300"
+                        }`}
+                        onClick={() => setShowRivers(!showRivers)}
+                      ></div>
+                      <div
+                        className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform transform ${
+                          showRivers ? "translate-x-6" : "translate-x-0"
+                        }`}
+                        onClick={() => setShowRivers(!showRivers)}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Administrative Boundaries Toggle - Enhanced */}
+                  <div className="flex items-center justify-between px-1 py-2 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div className="flex items-center">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          showAdministrativeBoundaries
+                            ? "bg-blue-100 text-blue-600"
+                            : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        <MapIcon size={16} />
+                      </div>
+                      <label htmlFor="district" className="ml-2 cursor-pointer">
+                        <div className="font-medium text-sm">Boundaries</div>
+                        <div className="text-xs text-gray-500">
+                          {showAdministrativeBoundaries
+                            ? "Administrative borders shown"
+                            : "Borders hidden"}
+                        </div>
+                      </label>
+                    </div>
+                    <div className="relative inline-block w-12 align-middle select-none">
+                      <input
+                        type="checkbox"
+                        id="district"
+                        checked={showAdministrativeBoundaries}
+                        onChange={() =>
+                          setShowAdministrativeBoundaries(
+                            !showAdministrativeBoundaries
+                          )
+                        }
+                        className="hidden"
+                      />
+                      <div
+                        className={`block w-12 h-6 rounded-full cursor-pointer transition-colors ${
+                          showAdministrativeBoundaries
+                            ? "bg-blue-500"
+                            : "bg-gray-300"
+                        }`}
+                        onClick={() =>
+                          setShowAdministrativeBoundaries(
+                            !showAdministrativeBoundaries
+                          )
+                        }
+                      ></div>
+                      <div
+                        className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform transform ${
+                          showAdministrativeBoundaries
+                            ? "translate-x-6"
+                            : "translate-x-0"
+                        }`}
+                        onClick={() =>
+                          setShowAdministrativeBoundaries(
+                            !showAdministrativeBoundaries
+                          )
+                        }
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Prediction Toggle - Enhanced */}
+                  <div className="flex items-center justify-between px-1 py-2 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div className="flex items-center">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          showPrediction
+                            ? "bg-blue-100 text-blue-600"
+                            : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        <ActivityIcon size={16} />
+                      </div>
+                      <label
+                        htmlFor="prediction"
+                        className="ml-2 cursor-pointer"
+                      >
+                        <div className="font-medium text-sm">
+                          Prediction Layer
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {showPrediction
+                            ? "Analysis data visible"
+                            : "Analysis hidden"}
+                        </div>
+                      </label>
+                    </div>
+                    <div className="relative inline-block w-12 align-middle select-none">
+                      <input
+                        type="checkbox"
+                        id="prediction"
+                        checked={showPrediction}
+                        onChange={() => setShowPrediction(!showPrediction)}
+                        className="hidden"
+                      />
+                      <div
+                        className={`block w-12 h-6 rounded-full cursor-pointer transition-colors ${
+                          showPrediction ? "bg-blue-500" : "bg-gray-300"
+                        }`}
+                        onClick={() => setShowPrediction(!showPrediction)}
+                      ></div>
+                      <div
+                        className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform transform ${
+                          showPrediction ? "translate-x-6" : "translate-x-0"
+                        }`}
+                        onClick={() => setShowPrediction(!showPrediction)}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Map Styles Section - Enhanced with thumbnails */}
+              <div>
+                <div className="flex items-center space-x-2 mb-2 pb-1 border-b border-gray-200 text-cyan-700">
+                  <MapPinIcon size={16} />
+                  <span className="font-medium">Map Style</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {Object.keys(mapStyles).map((style) => (
+                    <div
+                      key={style}
+                      className={`rounded-lg border p-2 cursor-pointer transition-all ${
+                        mapStyle === style
+                          ? "border-blue-500 bg-blue-50 shadow-md"
+                          : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
+                      }`}
+                      onClick={() => setMapStyle(style)}
+                    >
+                      <div className="h-16 bg-gray-100 rounded mb-1 overflow-hidden">
+                        {/* Map style thumbnail would go here - using placeholder */}
+                        <div
+                          className={`w-full h-full ${
+                            style === "satellite"
+                              ? "bg-gray-700"
+                              : style === "streets"
+                              ? "bg-gray-100"
+                              : style === "outdoors"
+                              ? "bg-green-50"
+                              : "bg-blue-50"
+                          }`}
+                        ></div>
+                      </div>
+                      <div className="flex items-center justify-center mt-1">
+                        <div className="w-3 h-3 mr-1 rounded-full flex-shrink-0">
+                          {mapStyle === style && (
+                            <div className="w-full h-full bg-blue-500 rounded-full"></div>
+                          )}
+                        </div>
+                        <span className="text-xs capitalize">{style}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-            <div className="mt-2 space-y-1">
+          )}
+
+          {/* Quick Action Buttons - Always visible even when collapsed */}
+          {!isPanelExpanded && (
+            <div className="p-2 grid grid-cols-4 gap-2">
+              <button
+                className={`p-2 rounded ${
+                  showRivers
+                    ? "bg-blue-100 text-blue-600"
+                    : "bg-gray-100 text-gray-500"
+                } hover:bg-blue-50`}
+                onClick={() => setShowRivers(!showRivers)}
+                title={showRivers ? "Hide Rivers" : "Show Rivers"}
+              >
+                <DropletIcon size={16} />
+              </button>
+              <button
+                className={`p-2 rounded ${
+                  showAdministrativeBoundaries
+                    ? "bg-blue-100 text-blue-600"
+                    : "bg-gray-100 text-gray-500"
+                } hover:bg-blue-50`}
+                onClick={() =>
+                  setShowAdministrativeBoundaries(!showAdministrativeBoundaries)
+                }
+                title={
+                  showAdministrativeBoundaries
+                    ? "Hide Boundaries"
+                    : "Show Boundaries"
+                }
+              >
+                <MapIcon size={16} />
+              </button>
+              <button
+                className={`p-2 rounded ${
+                  showPrediction
+                    ? "bg-blue-100 text-blue-600"
+                    : "bg-gray-100 text-gray-500"
+                } hover:bg-blue-50`}
+                onClick={() => setShowPrediction(!showPrediction)}
+                title={showPrediction ? "Hide Prediction" : "Show Prediction"}
+              >
+                <ActivityIcon size={16} />
+              </button>
+              <button
+                className="p-2 rounded bg-gray-100 text-gray-500 hover:bg-blue-50"
+                onClick={() => setMapStyleMenuOpen(!mapStyleMenuOpen)}
+                title="Map Style"
+              >
+                <LayersIcon size={16} />
+              </button>
+            </div>
+          )}
+
+          {/* Quick style selector dropdown - displayed when mapStyleMenuOpen is true */}
+          {!isPanelExpanded && mapStyleMenuOpen && (
+            <div className="absolute left-full ml-2 mt-2 bg-white rounded-lg shadow-lg p-2 z-20 w-40">
+              <div className="text-sm font-medium mb-2 text-gray-700">
+                Select Map Style
+              </div>
               {Object.keys(mapStyles).map((style) => (
                 <div
                   key={style}
                   className={`flex items-center px-2 py-1 hover:bg-gray-100 rounded cursor-pointer ${
                     mapStyle === style ? "bg-blue-100" : ""
                   }`}
-                  onClick={() => setMapStyle(style)}
+                  onClick={() => {
+                    setMapStyle(style);
+                    setMapStyleMenuOpen(false);
+                  }}
                 >
-                  <div className="w-4 h-4 mr-2 rounded border border-gray-300 flex-shrink-0">
+                  <div className="w-3 h-3 mr-2 rounded-full border border-gray-300 flex-shrink-0">
                     {mapStyle === style && (
-                      <div className="w-full h-full bg-blue-500 rounded-sm"></div>
+                      <div className="w-full h-full bg-blue-500 rounded-full"></div>
                     )}
                   </div>
                   <span className="text-sm capitalize">{style}</span>
                 </div>
               ))}
             </div>
-          </div>
+          )}
         </div>
 
         {/* Feature Info Panel - displays when a feature is clicked */}
         {showInfoPanel && selectedFeature && (
-          <div className="absolute top-24 right-20 z-20 bg-white rounded-2xl shadow-2xl p-5 w-80 max-h-[28rem] border border-gray-100 overflow-hidden">
+          <div
+            className="absolute top-24 right-20 z-20 bg-white rounded-2xl shadow-2xl p-5 w-80 max-h-[28rem] border border-gray-100 overflow-hidden transition-all duration-300 ease-in-out"
+            style={{
+              transform: showInfoPanel ? "translateX(0)" : "translateX(100%)",
+              opacity: showInfoPanel ? 1 : 0,
+            }}
+          >
             {/* Header */}
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold text-lg text-gray-800">
-                {formatFeatureInfo(selectedFeature)?.title || "Detail Lokasi"}
-              </h3>
+              <div className="flex items-center space-x-2">
+                <div className="bg-blue-100 p-2 rounded-lg">
+                  <MapPinIcon className="w-5 h-5 text-blue-600" />
+                </div>
+                <h3 className="font-semibold text-lg text-gray-800">
+                  {formatFeatureInfo(selectedFeature)?.title || "Detail Lokasi"}
+                </h3>
+              </div>
               <button
                 onClick={() => {
                   setShowInfoPanel(false);
                   setSelectedFeature(null);
                 }}
-                className="text-gray-400 hover:text-gray-600 transition"
+                className="text-gray-400 hover:text-gray-600 transition rounded-full p-1 hover:bg-gray-100"
                 aria-label="Close info panel"
               >
                 <XIcon className="w-5 h-5" />
@@ -1334,30 +1411,37 @@ function Maps() {
             </div>
 
             {/* Scrollable content wrapper */}
-            <div className="space-y-3 overflow-y-auto max-h-60 pr-1">
+            <div className="space-y-3 overflow-y-auto max-h-60 pr-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               {formatFeatureInfo(selectedFeature)?.details.map(
                 (item, index) => (
-                  <div key={index} className="pb-2 border-b border-gray-200">
-                    <div className="text-sm font-medium text-gray-500">
+                  <div
+                    key={index}
+                    className="pb-3 border-b border-gray-200 hover:bg-gray-50 p-2 rounded-md transition-colors duration-150"
+                  >
+                    <div className="text-sm font-medium text-gray-500 mb-1">
                       {item.label}
                     </div>
-                    <div className="text-base text-gray-800">{item.value}</div>
+                    <div className="text-base text-gray-800 break-words">
+                      {item.value}
+                    </div>
                   </div>
                 )
               )}
             </div>
 
             {/* Footer actions */}
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={() => {
-                  setShowInfoPanel(false);
-                  setSelectedFeature(null);
-                }}
-                className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg shadow hover:bg-blue-700 transition"
-              >
-                Tutup
-              </button>
+            <div className="mt-6 flex justify-between items-center">
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => {
+                    setShowInfoPanel(false);
+                    setSelectedFeature(null);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg shadow hover:bg-blue-700 transition"
+                >
+                  Tutup
+                </button>
+              </div>
             </div>
           </div>
         )}
