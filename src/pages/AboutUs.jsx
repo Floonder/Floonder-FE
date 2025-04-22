@@ -105,26 +105,26 @@ const AboutUs = () => {
   const teamMembers = [
     {
       name: "Rahman Hakim",
-      role: "Pengembang Backend",
-      bio: "Pengembang backend berpengalaman dengan spesialisasi di Golang. Sangat tertarik membangun API yang skalabel dan layanan mikro.",
+      role: "GIS Analyst",
+      bio: "GIS expert with experience in spatial data analysis. Has expertise in processing and analyzing geospatial data to support decision making.",
       img: "/rahman.png",
     },
     {
       name: "Dewi Puspita",
-      role: "Desainer UI/UX",
-      bio: "Desainer pemenang penghargaan dengan ketelitian tinggi. Menciptakan pengalaman pengguna yang menarik melalui sistem desain yang penuh pemikiran.",
+      role: "Project Manager",
+      bio: "Experienced project manager with a background in software development. Ensures projects run smoothly and according to schedule.",
       img: "/dewi.png",
     },
     {
       name: "Aisha Nur Izzati",
-      role: "Manajer Proyek",
-      bio: "PM bersertifikat dengan pengalaman memimpin tim lintas fungsi. Memastikan proyek diselesaikan tepat waktu dan sesuai ruang lingkup.",
+      role: "Business Analyst",
+      bio: "Business analyst focusing on understanding user needs and developing data-driven solutions. Has experience in market analysis and business strategy.",
       img: "/icha.png",
     },
     {
       name: "Rio Ragil Ramdani",
-      role: "Pengembang Frontend",
-      bio: "Pengembang frontend dengan spesialisasi React dan Vue.js. Senang menciptakan aplikasi web interaktif dengan fokus pada performa.",
+      role: "Developer",
+      bio: "Software developer with expertise in web and mobile application development. Experienced in various technologies and programming languages.",
       img: "/rio.png",
     },
   ];
