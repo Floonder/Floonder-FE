@@ -20,6 +20,7 @@ import {
   Droplet as DropletIcon,
   Activity as ActivityIcon,
   Loader as LoaderIcon,
+  Home as HomeIcon,
 } from "lucide-react";
 
 function Maps() {
@@ -36,6 +37,8 @@ function Maps() {
     useState(false);
   const [predictionData, setPredictionData] = useState([]);
   const [showPrediction, setShowPrediction] = useState(false);
+  const [propertyData, setPropertyData] = useState([]);
+  const [showProperties, setShowProperties] = useState(false);
   const [selectedFeature, setSelectedFeature] = useState(null);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [isPanelExpanded, setIsPanelExpanded] = useState(true);
@@ -166,7 +169,7 @@ function Maps() {
         const response = await fetch(
           `${
             import.meta.env.VITE_HOST_API
-          }/api/public/gis/wilayah-administrasi?kota=Kota Bandung`,
+          }/api/public/gis/wilayah-administrasi?kota=Kota Bandung&limit=1000`,
           {
             method: "GET",
             headers: {
@@ -400,6 +403,133 @@ function Maps() {
       map.current.removeSource("prediction");
     }
   }, [predictionData, showPrediction]);
+
+  useEffect(() => {
+    const fetchPropertyData = async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_HOST_API}/api/public/gis/properti`,
+          {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP Error! Status: ${response.status}`);
+        }
+
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          const text = await response.text();
+          console.error("Unexpected response content:", text);
+          throw new Error("Response is not JSON");
+        }
+
+        const data = await response.json();
+        const propertyFeatures = data.results?.features;
+
+        if (!Array.isArray(propertyFeatures)) {
+          throw new Error("Expected an array of property features");
+        }
+
+        const validPropertyData = propertyFeatures.filter(
+          (feature) =>
+            feature.type === "Feature" &&
+            feature.geometry &&
+            feature.geometry.type === "Point" &&
+            feature.geometry.coordinates
+        );
+
+        setPropertyData(validPropertyData);
+        // console.log("Fetched Property Data:", validPropertyData);
+      } catch (error) {
+        console.error("Error fetching property data:", error.message);
+      }
+    };
+
+    fetchPropertyData();
+  }, []);
+
+  // Add this effect to render property points on the map
+  useEffect(() => {
+    if (map.current && propertyData.length > 0 && showProperties) {
+      // Remove existing property layer if it exists
+      if (map.current.getSource("properties")) {
+        map.current.removeLayer("property-points");
+        map.current.removeLayer("property-labels");
+        map.current.removeSource("properties");
+      }
+
+      // Add property data as a source
+      map.current.addSource("properties", {
+        type: "geojson",
+        data: {
+          type: "FeatureCollection",
+          features: propertyData,
+        },
+      });
+
+      // Add circle layer for property points
+      map.current.addLayer({
+        id: "property-points",
+        type: "circle",
+        source: "properties",
+        paint: {
+          "circle-radius": 8,
+          "circle-color": "#4CAF50",
+          "circle-opacity": 0.8,
+          "circle-stroke-width": 1,
+          "circle-stroke-color": "#FFFFFF",
+        },
+      });
+
+      // Add text labels for properties
+      map.current.addLayer({
+        id: "property-labels",
+        type: "symbol",
+        source: "properties",
+        layout: {
+          "text-field": ["get", "kategori_properti"],
+          "text-font": ["Open Sans Regular"],
+          "text-size": 11,
+          "text-offset": [0, 1.5],
+          "text-anchor": "top",
+        },
+        paint: {
+          "text-color": "#333333",
+          "text-halo-color": "#FFFFFF",
+          "text-halo-width": 1,
+        },
+      });
+
+      // Add hover effect
+      map.current.on("mouseenter", "property-points", () => {
+        map.current.getCanvas().style.cursor = "pointer";
+      });
+
+      map.current.on("mouseleave", "property-points", () => {
+        map.current.getCanvas().style.cursor = "";
+      });
+
+      // Add click event for showing property info
+      map.current.on("click", "property-points", (e) => {
+        if (e.features && e.features.length > 0) {
+          const feature = e.features[0];
+          setSelectedFeature(feature);
+          setShowInfoPanel(true);
+        }
+      });
+    } else if (map.current && map.current.getSource("properties")) {
+      // Remove property layers if properties are hidden
+      map.current.removeLayer("property-points");
+      map.current.removeLayer("property-labels");
+      map.current.removeSource("properties");
+    }
+  }, [propertyData, showProperties]);
 
   useEffect(() => {
     if (map.current) {
@@ -748,6 +878,47 @@ function Maps() {
               value: properties.flood_elev
                 ? `${properties.flood_elev.toFixed(2)} m`
                 : "N/A",
+            },
+          ],
+        };
+      }
+
+      case "property-points": {
+        const properties = feature.properties;
+        const formattedPrice = new Intl.NumberFormat("id-ID", {
+          style: "currency",
+          currency: "IDR",
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        }).format(properties.harga_properti);
+
+        return {
+          title: properties.nama_properti || "Property",
+          details: [
+            { label: "Category", value: properties.kategori_properti || "N/A" },
+            { label: "Status", value: properties.status_properti || "N/A" },
+            { label: "Price", value: formattedPrice || "N/A" },
+            {
+              label: "Land Area",
+              value: properties.luas_tanah
+                ? `${properties.luas_tanah} m²`
+                : "N/A",
+            },
+            {
+              label: "Building Area",
+              value: properties.luas_bangunan
+                ? `${properties.luas_bangunan} m²`
+                : "N/A",
+            },
+            { label: "Address", value: properties.jalan_terdekat || "N/A" },
+            { label: "District", value: properties.kecamatan || "N/A" },
+            { label: "Sub-district", value: properties.kelurahan || "N/A" },
+            {
+              label: "More Info",
+              value: properties.link_lengkap_properti
+                ? `<a href="${properties.link_lengkap_properti}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:6px 12px;background-color:#1d4ed8;color:white;text-align:center;text-decoration:none;border-radius:4px;">View Details</a>`
+                : "N/A",
+              isHTML: true,
             },
           ],
         };
@@ -1249,6 +1420,52 @@ function Maps() {
                       ></div>
                     </div>
                   </div>
+
+                  <div className="flex items-center justify-between px-1 py-2 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div className="flex items-center">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                          showProperties
+                            ? "bg-blue-100 text-blue-600"
+                            : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        <HomeIcon size={16} />
+                      </div>
+                      <label
+                        htmlFor="properties"
+                        className="ml-2 cursor-pointer"
+                      >
+                        <div className="font-medium text-sm">Properties</div>
+                        <div className="text-xs text-gray-500">
+                          {showProperties
+                            ? "Property listings visible"
+                            : "Properties hidden"}
+                        </div>
+                      </label>
+                    </div>
+                    <div className="relative inline-block w-12 align-middle select-none">
+                      <input
+                        type="checkbox"
+                        id="properties"
+                        checked={showProperties}
+                        onChange={() => setShowProperties(!showProperties)}
+                        className="hidden"
+                      />
+                      <div
+                        className={`block w-12 h-6 rounded-full cursor-pointer transition-colors ${
+                          showProperties ? "bg-blue-500" : "bg-gray-300"
+                        }`}
+                        onClick={() => setShowProperties(!showProperties)}
+                      ></div>
+                      <div
+                        className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform transform ${
+                          showProperties ? "translate-x-6" : "translate-x-0"
+                        }`}
+                        onClick={() => setShowProperties(!showProperties)}
+                      ></div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1300,7 +1517,7 @@ function Maps() {
 
           {/* Quick Action Buttons - Always visible even when collapsed */}
           {!isPanelExpanded && (
-            <div className="p-2 grid grid-cols-4 gap-2">
+            <div className="p-2 grid grid-cols-5 gap-2">
               <button
                 className={`p-2 rounded ${
                   showRivers
@@ -1339,6 +1556,17 @@ function Maps() {
                 title={showPrediction ? "Hide Prediction" : "Show Prediction"}
               >
                 <ActivityIcon size={16} />
+              </button>
+              <button
+                className={`p-2 rounded ${
+                  showProperties
+                    ? "bg-blue-100 text-blue-600"
+                    : "bg-gray-100 text-gray-500"
+                } hover:bg-blue-50`}
+                onClick={() => setShowProperties(!showProperties)}
+                title={showProperties ? "Hide Properties" : "Show Properties"}
+              >
+                <HomeIcon size={16} />
               </button>
               <button
                 className="p-2 rounded bg-gray-100 text-gray-500 hover:bg-blue-50"
@@ -1382,7 +1610,7 @@ function Maps() {
         {/* Feature Info Panel - displays when a feature is clicked */}
         {showInfoPanel && selectedFeature && (
           <div
-            className="absolute top-24 right-20 z-20 bg-white rounded-2xl shadow-2xl p-5 w-80 max-h-[28rem] border border-gray-100 overflow-hidden transition-all duration-300 ease-in-out"
+            className="absolute top-24 right-20 z-20 bg-white rounded-2xl shadow-2xl p-5 w-80 max-h-[rem] border border-gray-100 overflow-hidden transition-all duration-300 ease-in-out"
             style={{
               transform: showInfoPanel ? "translateX(0)" : "translateX(100%)",
               opacity: showInfoPanel ? 1 : 0,
@@ -1422,7 +1650,11 @@ function Maps() {
                       {item.label}
                     </div>
                     <div className="text-base text-gray-800 break-words">
-                      {item.value}
+                      {item.isHTML ? (
+                        <div dangerouslySetInnerHTML={{ __html: item.value }} />
+                      ) : (
+                        item.value
+                      )}
                     </div>
                   </div>
                 )
@@ -1431,7 +1663,7 @@ function Maps() {
 
             {/* Footer actions */}
             <div className="mt-6 flex justify-between items-center">
-              <div className="flex space-x-2">
+              {/* <div className="flex space-x-2">
                 <button
                   onClick={() => {
                     setShowInfoPanel(false);
@@ -1441,7 +1673,7 @@ function Maps() {
                 >
                   Tutup
                 </button>
-              </div>
+              </div> */}
             </div>
           </div>
         )}
