@@ -65,6 +65,12 @@ function Maps() {
     satellite: `https://basemap.mapid.io/styles/satellite/style.json?key=${MAP_SERVICE_KEY}`,
     light: `https://basemap.mapid.io/styles/light/style.json?key=${MAP_SERVICE_KEY}`,
   };
+  const mapStyleImages = {
+    dark: "Dark.png",
+    light: "Light.png",
+    satellite: "Satellite.png",
+    street: "Street.png",
+  };
 
   useEffect(() => {
     map.current = new maplibregl.Map({
@@ -1504,7 +1510,7 @@ function Maps() {
                   <span className="font-medium">Map Style</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 mt-2">
-                  {Object.keys(mapStyles).map((style) => (
+                  {Object.keys(mapStyleImages).map((style) => (
                     <div
                       key={style}
                       className={`rounded-lg border p-2 cursor-pointer transition-all ${
@@ -1515,18 +1521,11 @@ function Maps() {
                       onClick={() => setMapStyle(style)}
                     >
                       <div className="h-16 bg-gray-100 rounded mb-1 overflow-hidden">
-                        {/* Map style thumbnail would go here - using placeholder */}
-                        <div
-                          className={`w-full h-full ${
-                            style === "satellite"
-                              ? "bg-gray-700"
-                              : style === "streets"
-                              ? "bg-gray-100"
-                              : style === "outdoors"
-                              ? "bg-green-50"
-                              : "bg-blue-50"
-                          }`}
-                        ></div>
+                        <img
+                          src={`/${mapStyleImages[style]}`}
+                          alt={style}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                       <div className="flex items-center justify-center mt-1">
                         <div className="w-3 h-3 mr-1 rounded-full flex-shrink-0">
