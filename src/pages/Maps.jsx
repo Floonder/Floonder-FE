@@ -43,7 +43,9 @@ function Maps() {
     administrative: { city: "Kota Bandung", month: "" },
     prediction: { city: "", month: "", year: "" },
     property: { city: "" },
+    river: { city: "" }, //
   });
+
   // Options for dropdowns
   const monthOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
   const yearOptions = Array.from({ length: 6 }, (_, i) => 2024 + i);
@@ -93,58 +95,59 @@ function Maps() {
     return () => map.current?.remove();
   }, []);
 
-  useEffect(() => {
-    const fetchRiverData = async () => {
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_HOST_API}/api/public/gis/sungai?limit=1000`,
-          {
-            method: "GET",
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json",
-            },
-          }
-        );
+  const fetchRiverData = async (city) => {
+    try {
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (city) params.append("kota", city);
+      params.append("limit", "10000");
 
-        if (!response.ok) {
-          throw new Error(`HTTP Error! Status: ${response.status}`);
-        }
+      const url = `${
+        import.meta.env.VITE_HOST_API
+      }/api/public/gis/sungai?${params.toString()}`;
 
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          const text = await response.text();
-          console.error("Unexpected response content:", text);
-          throw new Error("Response is not JSON");
-        }
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      });
 
-        const data = await response.json();
-
-        // Ambil data dari `results.features`
-        const riverFeatures = data.results?.features;
-
-        if (!Array.isArray(riverFeatures)) {
-          throw new Error("Expected an array of river features");
-        }
-
-        const validRiverData = riverFeatures.filter(
-          (river) =>
-            river.type === "Feature" &&
-            river.geometry &&
-            river.geometry.type === "MultiLineString" &&
-            river.geometry.coordinates
-        );
-
-        setRiverData(validRiverData);
-        // console.log("Fetched River Data:", validRiverData);
-      } catch (error) {
-        console.error("Error fetching river data:", error.message);
+      if (!response.ok) {
+        throw new Error(`HTTP Error! Status: ${response.status}`);
       }
-    };
 
-    fetchRiverData();
-  }, []);
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("Unexpected response content:", text);
+        throw new Error("Response is not JSON");
+      }
 
+      const data = await response.json();
+
+      // Ambil data dari `results.features`
+      const riverFeatures = data.results?.features;
+
+      if (!Array.isArray(riverFeatures)) {
+        throw new Error("Expected an array of river features");
+      }
+
+      const validRiverData = riverFeatures.filter(
+        (river) =>
+          river.type === "Feature" &&
+          river.geometry &&
+          river.geometry.type === "MultiLineString" &&
+          river.geometry.coordinates
+      );
+
+      setRiverData(validRiverData);
+      // console.log("Fetched River Data:", validRiverData);
+    } catch (error) {
+      console.error("Error fetching river data:", error.message);
+    }
+  };
   // Handle river data rendering
   useEffect(() => {
     if (map.current && riverData.length > 0 && showRivers) {
@@ -299,7 +302,7 @@ function Maps() {
       if (city) params.append("kota", city);
       if (month) params.append("month", month);
       if (year) params.append("year", year);
-      params.append("limit", "1000");
+      params.append("limit", "10000");
 
       const url = `${
         import.meta.env.VITE_HOST_API
@@ -431,7 +434,7 @@ function Maps() {
       // Build query parameters
       const params = new URLSearchParams();
       if (city) params.append("kota", city);
-      params.append("limit", "1000");
+      params.append("limit", "10000");
 
       const url = `${
         import.meta.env.VITE_HOST_API
@@ -490,6 +493,7 @@ function Maps() {
       filters.prediction.year
     );
     fetchPropertyData(filters.property.city);
+    fetchRiverData(filters.administrative.city);
   }, []);
 
   // Add this effect to render property points on the map
@@ -1000,6 +1004,8 @@ function Maps() {
       );
     } else if (section === "property") {
       fetchPropertyData(filters.property.city);
+    } else if (section === "river") {
+      fetchRiverData(filters.river.city); // Add this condition
     }
   };
 
@@ -1012,6 +1018,8 @@ function Maps() {
           ? { city: "Kota Bandung", month: "" }
           : section === "prediction"
           ? { city: "", month: "", year: "" }
+          : section === "river"
+          ? { city: "" }
           : { city: "" },
     }));
 
@@ -1022,6 +1030,8 @@ function Maps() {
       fetchPredictionData("", "", "");
     } else if (section === "property") {
       fetchPropertyData("");
+    } else if (section === "river") {
+      fetchRiverData("");
     }
   };
 
@@ -1090,7 +1100,6 @@ function Maps() {
             </button>
           </div>
         </div>
-
         {/* Prediction Filter */}
         <div className="bg-white p-3 rounded shadow-md">
           <h3 className="font-bold text-gray-800 mb-2">Prediction Filters</h3>
@@ -1167,7 +1176,6 @@ function Maps() {
             </button>
           </div>
         </div>
-
         {/* Property Filter */}
         <div className="bg-white p-3 rounded shadow-md">
           <h3 className="font-bold text-gray-800 mb-2">Property Filters</h3>
@@ -1201,6 +1209,46 @@ function Maps() {
             </button>
             <button
               onClick={() => clearFilters("property")}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+
+        {/* River Filter */}
+        <div className="bg-white p-3 rounded shadow-md">
+          <h3 className="font-bold text-gray-800 mb-2">River Filters</h3>
+          <div className="grid grid-cols-1 gap-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                City
+              </label>
+              <select
+                value={filters.river.city}
+                onChange={(e) =>
+                  handleFilterChange("river", "city", e.target.value)
+                }
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              >
+                <option value="">All Cities</option>
+                {cityOptions.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="mt-3 flex space-x-2">
+            <button
+              onClick={() => handleFilterSubmit("river")}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Apply Filter
+            </button>
+            <button
+              onClick={() => clearFilters("river")}
               className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               Clear
