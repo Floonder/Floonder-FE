@@ -230,7 +230,7 @@ function Maps() {
       );
 
       setAdministrativeData(validAdministrativeData);
-      console.log("Fetched Administrative Data:", validAdministrativeData);
+      // console.log("Fetched Administrative Data:", validAdministrativeData);
     } catch (error) {
       console.error("Error fetching administrative data:", error.message);
     }
@@ -340,7 +340,7 @@ function Maps() {
       );
 
       setPredictionData(validPredictionData);
-      console.log("Fetched Prediction Data:", validPredictionData);
+      // console.log("Fetched Prediction Data:", validPredictionData);
     } catch (error) {
       console.error("Error fetching prediction data:", error.message);
     }
@@ -472,7 +472,7 @@ function Maps() {
       );
 
       setPropertyData(validPropertyData);
-      console.log("Fetched Property Data:", validPropertyData);
+      // console.log("Fetched Property Data:", validPropertyData);
     } catch (error) {
       console.error("Error fetching property data:", error.message);
     }
