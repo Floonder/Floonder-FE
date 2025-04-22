@@ -54,6 +54,7 @@ function Maps() {
     "Cimahi",
     "Sumedang",
     "Garut",
+    "Bandung Barat",
   ];
 
   // Map style state and options
@@ -1060,7 +1061,9 @@ function Maps() {
                 <option value="">All Months</option>
                 {monthOptions.map((month) => (
                   <option key={month} value={month}>
-                    {month}
+                    {new Date(2024, month - 1, 1).toLocaleString("default", {
+                      month: "long",
+                    })}
                   </option>
                 ))}
               </select>
@@ -1119,7 +1122,9 @@ function Maps() {
                 <option value="">All Months</option>
                 {monthOptions.map((month) => (
                   <option key={month} value={month}>
-                    {month}
+                    {new Date(2024, month - 1, 1).toLocaleString("default", {
+                      month: "long",
+                    })}
                   </option>
                 ))}
               </select>
@@ -1129,13 +1134,10 @@ function Maps() {
                 Year
               </label>
               <select
-                value={filters.prediction.year}
-                onChange={(e) =>
-                  handleFilterChange("prediction", "year", e.target.value)
-                }
-                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                value="2025"
+                disabled // mencegah user mengubah
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-gray-100 cursor-not-allowed"
               >
-                <option value="">All Years</option>
                 {yearOptions.map((year) => (
                   <option key={year} value={year}>
                     {year}
@@ -1285,7 +1287,7 @@ function Maps() {
 
           {/* Panel Body - Collapsible */}
           {isPanelExpanded && (
-            <div className="p-3">
+            <div className="p-3 max-h-[600px] overflow-y-auto">
               {/* Filter Section */}
               <FilterSection />
               {/* Layers Section with improved toggles */}
