@@ -3,7 +3,6 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import Navbar from "../components/Navbar";
 import {
-  SearchIcon,
   LayersIcon,
   ZoomInIcon,
   ZoomOutIcon,
@@ -12,14 +11,11 @@ import {
   XIcon,
 } from "../components/icon/Icon";
 import {
-  XCircle as XCircleIcon,
   ChevronUp as ChevronUpIcon,
   ChevronDown as ChevronDownIcon,
-  RefreshCw as RefreshCwIcon,
   MapPin as MapPinIcon,
   Droplet as DropletIcon,
   Activity as ActivityIcon,
-  Loader as LoaderIcon,
   Home as HomeIcon,
 } from "lucide-react";
 
@@ -27,8 +23,6 @@ function Maps() {
   const MAP_SERVICE_KEY = import.meta.env.VITE_MAP_SERVICE_KEY;
   const mapContainer = useRef(null);
   const map = useRef(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
   const [is3DMode, setIs3DMode] = useState(true);
   const [riverData, setRiverData] = useState([]);
   const [showRivers, setShowRivers] = useState(false);
@@ -43,7 +37,24 @@ function Maps() {
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [isPanelExpanded, setIsPanelExpanded] = useState(true);
   const [mapStyleMenuOpen, setMapStyleMenuOpen] = useState(false);
-  const [isSearching] = useState(false);
+
+  // New states for filters
+  const [filters, setFilters] = useState({
+    administrative: { city: "Kota Bandung", month: "" },
+    prediction: { city: "", month: "", year: "" },
+    property: { city: "" },
+  });
+  // Options for dropdowns
+  const monthOptions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  const yearOptions = Array.from({ length: 6 }, (_, i) => 2024 + i);
+
+  const cityOptions = [
+    "Kota Bandung",
+    "Bandung",
+    "Cimahi",
+    "Sumedang",
+    "Garut",
+  ];
 
   // Map style state and options
   const [mapStyle, setMapStyle] = useState("dark"); // Default style
@@ -163,59 +174,60 @@ function Maps() {
     }
   }, [riverData, showRivers]);
 
-  useEffect(() => {
-    const fetchAdministrativeData = async () => {
-      try {
-        const response = await fetch(
-          `${
-            import.meta.env.VITE_HOST_API
-          }/api/public/gis/wilayah-administrasi?kota=Kota Bandung&limit=1000`,
-          {
-            method: "GET",
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json",
-            },
-          }
-        );
+  const fetchAdministrativeData = async (city, month) => {
+    try {
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (city) params.append("kota", city);
+      if (month) params.append("month", month);
+      params.append("limit", "10000");
 
-        if (!response.ok) {
-          throw new Error(`HTTP Error! Status: ${response.status}`);
-        }
+      const url = `${
+        import.meta.env.VITE_HOST_API
+      }/api/public/gis/wilayah-administrasi?${params.toString()}`;
 
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          const text = await response.text();
-          console.error("Unexpected response content:", text);
-          throw new Error("Response is not JSON");
-        }
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      });
 
-        const data = await response.json();
-
-        // Ambil data dari `results.features`
-        const administrativeFeatures = data.results?.features;
-
-        if (!Array.isArray(administrativeFeatures)) {
-          throw new Error("Expected an array of administrative features");
-        }
-
-        const validAdministrativeData = administrativeFeatures.filter(
-          (feature) =>
-            feature.type === "Feature" &&
-            feature.geometry &&
-            feature.geometry.type === "MultiPolygon" &&
-            feature.geometry.coordinates
-        );
-
-        setAdministrativeData(validAdministrativeData);
-        // console.log("Fetched Administrative Data:", validAdministrativeData);
-      } catch (error) {
-        console.error("Error fetching administrative data:", error.message);
+      if (!response.ok) {
+        throw new Error(`HTTP Error! Status: ${response.status}`);
       }
-    };
 
-    fetchAdministrativeData();
-  }, []);
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("Unexpected response content:", text);
+        throw new Error("Response is not JSON");
+      }
+
+      const data = await response.json();
+
+      // Ambil data dari `results.features`
+      const administrativeFeatures = data.results?.features;
+
+      if (!Array.isArray(administrativeFeatures)) {
+        throw new Error("Expected an array of administrative features");
+      }
+
+      const validAdministrativeData = administrativeFeatures.filter(
+        (feature) =>
+          feature.type === "Feature" &&
+          feature.geometry &&
+          feature.geometry.type === "MultiPolygon" &&
+          feature.geometry.coordinates
+      );
+
+      setAdministrativeData(validAdministrativeData);
+      console.log("Fetched Administrative Data:", validAdministrativeData);
+    } catch (error) {
+      console.error("Error fetching administrative data:", error.message);
+    }
+  };
 
   useEffect(() => {
     if (
@@ -273,56 +285,59 @@ function Maps() {
   }, [administrativeData, showAdministrativeBoundaries]);
 
   // Updated to fetch and filter Point geometry type for flood prediction data
-  useEffect(() => {
-    const fetchPredictionData = async () => {
-      try {
-        const response = await fetch(
-          `${
-            import.meta.env.VITE_HOST_API
-          }/api/public/gis/flood-point?limit=1000`,
-          {
-            method: "GET",
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json",
-            },
-          }
-        );
+  const fetchPredictionData = async (city, month, year) => {
+    try {
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (city) params.append("kota", city);
+      if (month) params.append("month", month);
+      if (year) params.append("year", year);
+      params.append("limit", "1000");
 
-        if (!response.ok) {
-          throw new Error(`HTTP Error! Status: ${response.status}`);
-        }
+      const url = `${
+        import.meta.env.VITE_HOST_API
+      }/api/public/gis/flood-point?${params.toString()}`;
 
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          const text = await response.text();
-          console.error("Unexpected response content:", text);
-          throw new Error("Response is not JSON");
-        }
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      });
 
-        const data = await response.json();
-        const predictionFeatures = data.results?.features;
-        if (!Array.isArray(predictionFeatures)) {
-          throw new Error("Expected an array of prediction features");
-        }
-
-        // Updated to filter for Point geometry type
-        const validPredictionData = predictionFeatures.filter(
-          (feature) =>
-            feature.type === "Feature" &&
-            feature.geometry &&
-            feature.geometry.type === "Point" &&
-            feature.geometry.coordinates
-        );
-
-        setPredictionData(validPredictionData);
-        // console.log("Fetched Prediction Data:", validPredictionData);
-      } catch (error) {
-        console.error("Error fetching prediction data:", error.message);
+      if (!response.ok) {
+        throw new Error(`HTTP Error! Status: ${response.status}`);
       }
-    };
-    fetchPredictionData();
-  }, []);
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("Unexpected response content:", text);
+        throw new Error("Response is not JSON");
+      }
+
+      const data = await response.json();
+      const predictionFeatures = data.results?.features;
+      if (!Array.isArray(predictionFeatures)) {
+        throw new Error("Expected an array of prediction features");
+      }
+
+      // Updated to filter for Point geometry type
+      const validPredictionData = predictionFeatures.filter(
+        (feature) =>
+          feature.type === "Feature" &&
+          feature.geometry &&
+          feature.geometry.type === "Point" &&
+          feature.geometry.coordinates
+      );
+
+      setPredictionData(validPredictionData);
+      console.log("Fetched Prediction Data:", validPredictionData);
+    } catch (error) {
+      console.error("Error fetching prediction data:", error.message);
+    }
+  };
 
   // Updated to render point data for flood predictions
   useEffect(() => {
@@ -404,54 +419,70 @@ function Maps() {
     }
   }, [predictionData, showPrediction]);
 
-  useEffect(() => {
-    const fetchPropertyData = async () => {
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_HOST_API}/api/public/gis/properti`,
-          {
-            method: "GET",
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json",
-            },
-          }
-        );
+  const fetchPropertyData = async (city) => {
+    try {
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (city) params.append("kota", city);
+      params.append("limit", "1000");
 
-        if (!response.ok) {
-          throw new Error(`HTTP Error! Status: ${response.status}`);
-        }
+      const url = `${
+        import.meta.env.VITE_HOST_API
+      }/api/public/gis/properti?${params.toString()}`;
 
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          const text = await response.text();
-          console.error("Unexpected response content:", text);
-          throw new Error("Response is not JSON");
-        }
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      });
 
-        const data = await response.json();
-        const propertyFeatures = data.results?.features;
-
-        if (!Array.isArray(propertyFeatures)) {
-          throw new Error("Expected an array of property features");
-        }
-
-        const validPropertyData = propertyFeatures.filter(
-          (feature) =>
-            feature.type === "Feature" &&
-            feature.geometry &&
-            feature.geometry.type === "Point" &&
-            feature.geometry.coordinates
-        );
-
-        setPropertyData(validPropertyData);
-        // console.log("Fetched Property Data:", validPropertyData);
-      } catch (error) {
-        console.error("Error fetching property data:", error.message);
+      if (!response.ok) {
+        throw new Error(`HTTP Error! Status: ${response.status}`);
       }
-    };
 
-    fetchPropertyData();
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text();
+        console.error("Unexpected response content:", text);
+        throw new Error("Response is not JSON");
+      }
+
+      const data = await response.json();
+      const propertyFeatures = data.results?.features;
+
+      if (!Array.isArray(propertyFeatures)) {
+        throw new Error("Expected an array of property features");
+      }
+
+      const validPropertyData = propertyFeatures.filter(
+        (feature) =>
+          feature.type === "Feature" &&
+          feature.geometry &&
+          feature.geometry.type === "Point" &&
+          feature.geometry.coordinates
+      );
+
+      setPropertyData(validPropertyData);
+      console.log("Fetched Property Data:", validPropertyData);
+    } catch (error) {
+      console.error("Error fetching property data:", error.message);
+    }
+  };
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchAdministrativeData(
+      filters.administrative.city,
+      filters.administrative.month
+    );
+    fetchPredictionData(
+      filters.prediction.city,
+      filters.prediction.month,
+      filters.prediction.year
+    );
+    fetchPropertyData(filters.property.city);
   }, []);
 
   // Add this effect to render property points on the map
@@ -937,6 +968,241 @@ function Maps() {
     }
   };
 
+  const handleFilterChange = (section, field, value) => {
+    setFilters((prev) => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: value,
+      },
+    }));
+  };
+
+  // Handle filter submit
+  const handleFilterSubmit = (section) => {
+    if (section === "administrative") {
+      fetchAdministrativeData(
+        filters.administrative.city,
+        filters.administrative.month
+      );
+    } else if (section === "prediction") {
+      fetchPredictionData(
+        filters.prediction.city,
+        filters.prediction.month,
+        filters.prediction.year
+      );
+    } else if (section === "property") {
+      fetchPropertyData(filters.property.city);
+    }
+  };
+
+  // Clear filters
+  const clearFilters = (section) => {
+    setFilters((prev) => ({
+      ...prev,
+      [section]:
+        section === "administrative"
+          ? { city: "Kota Bandung", month: "" }
+          : section === "prediction"
+          ? { city: "", month: "", year: "" }
+          : { city: "" },
+    }));
+
+    // Fetch data with cleared filters
+    if (section === "administrative") {
+      fetchAdministrativeData("Kota Bandung", "");
+    } else if (section === "prediction") {
+      fetchPredictionData("", "", "");
+    } else if (section === "property") {
+      fetchPropertyData("");
+    }
+  };
+
+  const FilterSection = () => {
+    return (
+      <div className="mb-4 space-y-4">
+        {/* Administrative Boundaries Filter */}
+        <div className="bg-white p-3 rounded shadow-md">
+          <h3 className="font-bold text-gray-800 mb-2">
+            Administrative Area Filters
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                City
+              </label>
+              <select
+                value={filters.administrative.city}
+                onChange={(e) =>
+                  handleFilterChange("administrative", "city", e.target.value)
+                }
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              >
+                <option value="">All Cities</option>
+                {cityOptions.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Month
+              </label>
+              <select
+                value={filters.administrative.month}
+                onChange={(e) =>
+                  handleFilterChange("administrative", "month", e.target.value)
+                }
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              >
+                <option value="">All Months</option>
+                {monthOptions.map((month) => (
+                  <option key={month} value={month}>
+                    {month}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="mt-3 flex space-x-2">
+            <button
+              onClick={() => handleFilterSubmit("administrative")}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Apply Filter
+            </button>
+            <button
+              onClick={() => clearFilters("administrative")}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+
+        {/* Prediction Filter */}
+        <div className="bg-white p-3 rounded shadow-md">
+          <h3 className="font-bold text-gray-800 mb-2">Prediction Filters</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                City
+              </label>
+              <select
+                value={filters.prediction.city}
+                onChange={(e) =>
+                  handleFilterChange("prediction", "city", e.target.value)
+                }
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              >
+                <option value="">All Cities</option>
+                {cityOptions.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Month
+              </label>
+              <select
+                value={filters.prediction.month}
+                onChange={(e) =>
+                  handleFilterChange("prediction", "month", e.target.value)
+                }
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              >
+                <option value="">All Months</option>
+                {monthOptions.map((month) => (
+                  <option key={month} value={month}>
+                    {month}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Year
+              </label>
+              <select
+                value={filters.prediction.year}
+                onChange={(e) =>
+                  handleFilterChange("prediction", "year", e.target.value)
+                }
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              >
+                <option value="">All Years</option>
+                {yearOptions.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="mt-3 flex space-x-2">
+            <button
+              onClick={() => handleFilterSubmit("prediction")}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Apply Filter
+            </button>
+            <button
+              onClick={() => clearFilters("prediction")}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+
+        {/* Property Filter */}
+        <div className="bg-white p-3 rounded shadow-md">
+          <h3 className="font-bold text-gray-800 mb-2">Property Filters</h3>
+          <div className="grid grid-cols-1 gap-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                City
+              </label>
+              <select
+                value={filters.property.city}
+                onChange={(e) =>
+                  handleFilterChange("property", "city", e.target.value)
+                }
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              >
+                <option value="">All Cities</option>
+                {cityOptions.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="mt-3 flex space-x-2">
+            <button
+              onClick={() => handleFilterSubmit("property")}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Apply Filter
+            </button>
+            <button
+              onClick={() => clearFilters("property")}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Handle 2D/3D toggle
   useEffect(() => {
     if (map.current) {
@@ -950,162 +1216,6 @@ function Maps() {
       map.current.setStyle(mapStyles[mapStyle]);
     }
   }, [mapStyle]);
-
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (searchQuery.trim() === "") return;
-
-    console.log("Searching for:", searchQuery);
-
-    try {
-      const geocodingEndpoint = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-        searchQuery + ", Jawa Barat, Indonesia"
-      )}&addressdetails=1&limit=1`;
-
-      const response = await fetch(geocodingEndpoint, {
-        headers: {
-          "User-Agent": "YourAppName/1.0 (email@example.com)",
-        },
-      });
-      const data = await response.json();
-
-      if (data && data.length > 0) {
-        const firstResult = data[0];
-        const lat = parseFloat(firstResult.lat);
-        const lon = parseFloat(firstResult.lon);
-
-        // Fly to the location with animation
-        map.current.flyTo({
-          center: [lon, lat],
-          zoom: 14,
-          essential: true,
-        });
-
-        // Clear old marker
-        if (map.current.getSource("search-marker")) {
-          map.current.removeLayer("search-marker-layer");
-          map.current.removeSource("search-marker");
-        }
-
-        // Add new marker
-        map.current.addSource("search-marker", {
-          type: "geojson",
-          data: {
-            type: "Feature",
-            geometry: {
-              type: "Point",
-              coordinates: [lon, lat],
-            },
-            properties: {
-              title: firstResult.display_name || searchQuery,
-              description: "Search result",
-            },
-          },
-        });
-
-        map.current.addLayer({
-          id: "search-marker-layer",
-          type: "circle",
-          source: "search-marker",
-          paint: {
-            "circle-radius": 8,
-            "circle-color": "#FF0000",
-            "circle-stroke-width": 2,
-            "circle-stroke-color": "#FFFFFF",
-          },
-        });
-
-        new maplibregl.Popup()
-          .setLngLat([lon, lat])
-          .setHTML(`<h3>${firstResult.display_name || searchQuery}</h3>`)
-          .addTo(map.current);
-      } else {
-        alert(`No locations found matching "${searchQuery}" in West Java`);
-      }
-    } catch (error) {
-      console.error("Error during location search:", error);
-      alert("Error searching for location. Please try again.");
-    }
-  };
-
-  const handleSearchInputChange = async (e) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-
-    if (query.length < 3) {
-      setSuggestions([]);
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          query + ", Jawa Barat, Indonesia"
-        )}&addressdetails=1&limit=5`
-      );
-      const data = await response.json();
-      setSuggestions(data);
-    } catch (error) {
-      console.error("Failed to fetch suggestions:", error);
-      setSuggestions([]);
-    }
-  };
-
-  const clearSearch = () => {
-    if (map.current && map.current.getSource("search-marker")) {
-      map.current.removeLayer("search-marker-layer");
-      map.current.removeSource("search-marker");
-    }
-    setSearchQuery("");
-  };
-
-  const handleSuggestionSelect = (item) => {
-    const lat = parseFloat(item.lat);
-    const lon = parseFloat(item.lon);
-
-    map.current.flyTo({
-      center: [lon, lat],
-      zoom: 14,
-      essential: true,
-    });
-
-    if (map.current.getSource("search-marker")) {
-      map.current.removeLayer("search-marker-layer");
-      map.current.removeSource("search-marker");
-    }
-
-    map.current.addSource("search-marker", {
-      type: "geojson",
-      data: {
-        type: "Feature",
-        geometry: {
-          type: "Point",
-          coordinates: [lon, lat],
-        },
-        properties: {
-          title: item.display_name,
-          description: "Suggestion Result",
-        },
-      },
-    });
-
-    map.current.addLayer({
-      id: "search-marker-layer",
-      type: "circle",
-      source: "search-marker",
-      paint: {
-        "circle-radius": 8,
-        "circle-color": "#FF0000",
-        "circle-stroke-width": 2,
-        "circle-stroke-color": "#FFFFFF",
-      },
-    });
-
-    new maplibregl.Popup()
-      .setLngLat([lon, lat])
-      .setHTML(`<h3>${item.display_name}</h3>`)
-      .addTo(map.current);
-  };
 
   useEffect(() => {
     const handleClickOutside = () => {
@@ -1176,92 +1286,8 @@ function Maps() {
           {/* Panel Body - Collapsible */}
           {isPanelExpanded && (
             <div className="p-3">
-              {/* Search Section */}
-              <div className="mb-4">
-                <div className="flex items-center space-x-2 mb-2 text-cyan-700">
-                  <SearchIcon size={16} />
-                  <span className="font-medium">Search Locations</span>
-                </div>
-                <form onSubmit={handleSearch} className="relative">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Search locations in West Java..."
-                      className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white text-gray-800 pr-10"
-                      value={searchQuery}
-                      onChange={handleSearchInputChange}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => (searchQuery ? clearSearch() : null)}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {searchQuery ? (
-                        <XCircleIcon size={18} />
-                      ) : (
-                        <SearchIcon size={18} />
-                      )}
-                    </button>
-
-                    {/* Animated loading indicator */}
-                    {isSearching && (
-                      <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
-                        <LoaderIcon
-                          size={18}
-                          className="animate-spin text-cyan-600"
-                        />
-                      </div>
-                    )}
-
-                    {/* Enhanced suggestions dropdown with animations */}
-                    {suggestions.length > 0 && (
-                      <ul className="absolute w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto z-20 animate-fadeIn">
-                        {suggestions.map((item, index) => (
-                          <li
-                            key={index}
-                            onClick={() => {
-                              setSearchQuery(item.display_name);
-                              setSuggestions([]);
-                              handleSuggestionSelect(item);
-                            }}
-                            className="px-4 py-2 cursor-pointer hover:bg-cyan-50 border-b border-gray-100 last:border-b-0 flex items-center"
-                          >
-                            <MapPinIcon
-                              size={16}
-                              className="mr-2 text-cyan-600"
-                            />
-                            <span>{item.display_name}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-
-                  {/* Button group - now side by side and more compact */}
-                  <div className="flex justify-between mt-3 gap-2">
-                    <button
-                      type="button"
-                      onClick={clearSearch}
-                      className="flex-1 px-3 py-2 flex items-center justify-center gap-1 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:outline-none transition-colors"
-                      title="Reset search"
-                      disabled={!searchQuery}
-                    >
-                      <RefreshCwIcon size={16} />
-                      <span>Reset</span>
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 px-3 py-2 flex items-center justify-center gap-1 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 focus:outline-none transition-colors"
-                      title="Search"
-                      disabled={!searchQuery}
-                    >
-                      <SearchIcon size={16} />
-                      <span>Search</span>
-                    </button>
-                  </div>
-                </form>
-              </div>
-
+              {/* Filter Section */}
+              <FilterSection />
               {/* Layers Section with improved toggles */}
               <div className="mb-4">
                 <div className="flex items-center space-x-2 mb-2 pb-1 border-b border-gray-200 text-cyan-700">
