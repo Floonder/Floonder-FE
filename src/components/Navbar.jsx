@@ -129,6 +129,30 @@ const Navbar = () => {
                 Maps
               </Link>
             </li>
+            <li className="text-gray-300">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                stroke="currentColor"
+                className="w-4 h-4 current-fill"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 5v0m0 7v0m0 7v0m0-13a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                />
+              </svg>
+            </li>
+            <li>
+              <Link
+                to="/consult"
+                className="text-sm text-white hover:text-[#8b8b8b] transition-colors duration-300"
+              >
+                Consult
+              </Link>
+            </li>
           </ul>
           <div className="hidden lg:block">
             <Link
@@ -258,6 +282,29 @@ const Navbar = () => {
                         />
                       </svg>
                       Maps
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/consult"
+                      className="flex items-center p-3 text-base font-semibold text-white hover:bg-[#8b8b8b]/20 rounded-lg"
+                      onClick={toggleMenu}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 mr-3"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                      Consult
                     </Link>
                   </li>
                 </ul>

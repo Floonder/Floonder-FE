@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import About from "./pages/AboutUs";
 import Maps from "./pages/Maps";
+import Consult from "./pages/Consult";
 import SignIn from "./pages/Auth";
 import Navigator from "./components/maps/Navigator";
 import Line from "./components/maps/Line";
@@ -17,6 +18,7 @@ const App = () => {
       <Route path="/about" element={<About />} />
       <Route path="/maps" element={<Maps />} />
       <Route path="/auth" element={<SignIn />} />
+      <Route path="/consult" element={<Consult />} />
       <Route path="/maps/navigator" element={<Navigator />} />
       <Route path="/maps/line" element={<Line />} />
       <Route path="/maps/marker" element={<Marker />} />
