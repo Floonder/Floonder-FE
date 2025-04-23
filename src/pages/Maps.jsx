@@ -40,8 +40,8 @@ function Maps() {
 
   // New states for filters
   const [filters, setFilters] = useState({
-    administrative: { city: "Kota Bandung", month: "" },
-    prediction: { city: "", month: "", year: "" },
+    administrative: { city: "Kota Bandung", month: new Date().getMonth() + 1 },
+    prediction: { city: "", month: new Date().getMonth() + 1, year: "" },
     property: { city: "" },
     river: { city: "" }, //
   });
