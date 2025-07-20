@@ -8,17 +8,18 @@ const FAQ = () => {
   };
 
   return (
-    <section className="relative text-white flex items-center justify-center px-6 py-1 overflow-hidden">
-      <div className="relative z-10 max-w-[85rem] w-full px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
-        <div className="grid md:grid-cols-5 gap-10">
+    <section className="relative text-gray-900 flex items-center justify-center px-6 py-16 md:py-24 overflow-hidden bg-gray-50">
+      <div className="relative z-10 max-w-7xl w-full px-4 py-10 sm:px-6 lg:px-8 lg:py-14 mx-auto">
+        <div className="grid md:grid-cols-5 gap-12">
           <div className="md:col-span-2">
-            <div className="max-w-xs">
-              <h2 className="text-2xl font-bold md:text-4xl md:leading-tight text-white">
-                GIS <span className="text-cyan-400">FAQ</span>
-                <br />
-                (Frequently Asked Questions)
+            <div className="max-w-lg">
+              <h2 className="text-4xl md:text-5xl font-bold md:leading-tight text-gray-900 mb-6">
+                GIS <span className="text-blue-600">FAQ</span>
               </h2>
-              <p className="mt-1 hidden md:block text-gray-400">
+              <p className="text-lg text-gray-600 leading-relaxed mb-8">
+                Frequently Asked Questions
+              </p>
+              <p className="text-base text-gray-600 leading-relaxed">
                 Temukan jawaban komprehensif tentang layanan GIS kami. Kami siap
                 membantu Anda memahami solusi geografis inovatif kami.
               </p>
@@ -26,7 +27,7 @@ const FAQ = () => {
           </div>
 
           <div className="md:col-span-3">
-            <div className="divide-y divide-gray-800">
+            <div className="space-y-4">
               {[
                 {
                   question: "Apa itu Teknologi GIS?",
@@ -61,39 +62,60 @@ const FAQ = () => {
               ].map((faq, index) => (
                 <div
                   key={index}
-                  className="py-6 border-b border-gray-800 
-                  transform transition-all duration-300 hover:bg-[#1A1A1A]"
+                  className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl p-6
+                  transform transition-all duration-300 hover:shadow-lg hover:scale-[1.02] shadow-md"
                 >
                   <button
-                    className="group inline-flex items-center justify-between gap-x-3 w-full md:text-lg font-semibold text-start text-white rounded-lg transition hover:text-cyan-400"
+                    className="group inline-flex items-center justify-between gap-x-3 w-full text-left
+                    text-lg md:text-xl font-semibold text-gray-900 transition-colors hover:text-blue-600"
                     aria-expanded={activeAccordion === index ? "true" : "false"}
                     onClick={() => toggleAccordion(index)}
                   >
                     {faq.question}
-                    <svg
-                      className={`shrink-0 size-5 text-gray-600 group-hover:text-cyan-400 ${
-                        activeAccordion === index ? "rotate-180" : ""
+                    <div
+                      className={`flex-shrink-0 w-8 h-8 rounded-full border-2 border-gray-300 
+                      flex items-center justify-center transition-all duration-300
+                      ${
+                        activeAccordion === index
+                          ? "border-blue-600 bg-blue-600"
+                          : "group-hover:border-blue-600"
                       }`}
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
                     >
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
+                      <svg
+                        className={`w-4 h-4 transition-all duration-300 
+                          ${
+                            activeAccordion === index
+                              ? "rotate-180 text-white"
+                              : "text-gray-600 group-hover:text-blue-600"
+                          }`}
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    </div>
                   </button>
+
                   <div
-                    className={`w-full max-h-40 overflow-hidden transition-[height] duration-300 ${
-                      activeAccordion === index ? "block" : "hidden"
+                    className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                      activeAccordion === index
+                        ? "max-h-96 opacity-100 mt-4"
+                        : "max-h-0 opacity-0"
                     }`}
                     role="region"
                   >
-                    <p className="text-gray-400 mt-3">{faq.answer}</p>
+                    <div className="pb-2">
+                      <p className="text-gray-600 text-base leading-relaxed">
+                        {faq.answer}
+                      </p>
+                    </div>
                   </div>
                 </div>
               ))}
