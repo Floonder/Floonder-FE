@@ -204,7 +204,7 @@ const ConsultationPage = () => {
               </div>
               <h1 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-6 leading-tight">
                 Konsultasi Ahli
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-sky-400">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-green-500">
                   {" "}
                   Sipil Wilayah
                 </span>
@@ -527,7 +527,7 @@ const ConsultationPage = () => {
 
       {/* Enhanced CTA Section */}
       <motion.section
-        className="py-20 bg-gradient-to-br from-blue-600 via-sky-500 to-blue-700 relative overflow-hidden"
+        className="py-20 bg-gradient-to-br from-blue-600 via-sky-500 to-green-500 relative overflow-hidden"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.3 }}
