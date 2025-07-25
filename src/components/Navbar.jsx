@@ -64,7 +64,7 @@ const Navbar = () => {
     },
     {
       name: "Status Cuaca",
-      path: "/alerts",
+      path: "/weather",
       icon: AlertTriangle,
     },
     {
@@ -107,7 +107,10 @@ const Navbar = () => {
             <img src="Artboard 3.png" alt="logo" className="h-8 sm:h-10 mr-2" />
             <div className="flex flex-col">
               <span className="text-xl font-bold">
-                Flo<span className="text-blue-600">onder</span>
+                Flo
+                <span className="bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
+                  onder
+                </span>
               </span>
               <span className="text-xs text-slate-500 -mt-1">
                 GIS Flood System
@@ -164,13 +167,6 @@ const Navbar = () => {
           {/* Desktop Auth Button */}
           <div className="hidden lg:flex lg:items-center lg:space-x-3">
             <a
-              href="/contact"
-              className="flex items-center px-3 py-2 text-sm text-slate-600 hover:text-blue-600 transition-colors"
-            >
-              <Phone className="w-4 h-4 mr-1" />
-              Kontak
-            </a>
-            <a
               href="/auth"
               className="flex items-center px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 text-sm font-semibold rounded-full transition-all duration-300 shadow-md hover:shadow-lg"
             >
@@ -211,7 +207,7 @@ const Navbar = () => {
                 className="flex items-center text-slate-800 font-bold"
                 onClick={toggleMenu}
               >
-                <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-2 rounded-xl mr-3">
+                <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-green-50 p-2 rounded-xl mr-3">
                   <Map className="h-5 w-5 text-white" />
                 </div>
                 <div>
@@ -280,14 +276,6 @@ const Navbar = () => {
 
             {/* Mobile Auth Section */}
             <div className="p-4 border-t border-slate-200 space-y-3">
-              <a
-                href="/contact"
-                className="flex items-center justify-center w-full p-3 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                onClick={toggleMenu}
-              >
-                <Phone className="w-5 h-5 mr-2" />
-                Hubungi Kami
-              </a>
               <a
                 href="/auth"
                 className="flex items-center justify-center w-full p-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 font-semibold rounded-lg transition-all duration-300"

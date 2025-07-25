@@ -11,6 +11,7 @@ import Points from "./components/maps/Point";
 import Polygon from "./components/maps/Polygon";
 import Dashboard from "./pages/Admin/Dashboard";
 import News from "./pages/News";
+import Weather from "./pages/Weather";
 
 const App = () => {
   return (
@@ -27,6 +28,7 @@ const App = () => {
       <Route path="/maps/polygon" element={<Polygon />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/news" element={<News />} />
+      <Route path="/weather" element={<Weather />} />
     </Routes>
   );
 };
