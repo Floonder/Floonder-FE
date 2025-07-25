@@ -10,6 +10,7 @@ import Marker from "./components/maps/Marker";
 import Points from "./components/maps/Point";
 import Polygon from "./components/maps/Polygon";
 import Dashboard from "./pages/Admin/Dashboard";
+import News from "./pages/News";
 
 const App = () => {
   return (
@@ -25,6 +26,7 @@ const App = () => {
       <Route path="/maps/point" element={<Points />} />
       <Route path="/maps/polygon" element={<Polygon />} />
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/news" element={<News />} />
     </Routes>
   );
 };
