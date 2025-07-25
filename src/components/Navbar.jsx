@@ -11,6 +11,7 @@ import {
   Phone,
   User,
   ChevronDown,
+  Newspaper,
 } from "lucide-react";
 
 const Navbar = () => {
@@ -55,11 +56,11 @@ const Navbar = () => {
       name: "Peta Banjir",
       path: "/maps",
       icon: Map,
-      submenu: [
-        { name: "Peta Real-time", path: "/maps/realtime" },
-        { name: "Analisis Risiko", path: "/maps/risk-analysis" },
-        { name: "Riwayat Banjir", path: "/maps/history" },
-      ],
+      // submenu: [
+      //   { name: "Peta Real-time", path: "/maps/realtime" },
+      //   { name: "Analisis Risiko", path: "/maps/risk-analysis" },
+      //   { name: "Riwayat Banjir", path: "/maps/history" },
+      // ],
     },
     {
       name: "Status Cuaca",
@@ -67,14 +68,19 @@ const Navbar = () => {
       icon: AlertTriangle,
     },
     {
-      name: "Monitoring",
-      path: "/monitoring",
+      name: "Anaitik",
+      path: "/analytics",
       icon: Activity,
     },
     {
       name: "Konsultasi",
       path: "/consult",
       icon: MessageCircle,
+    },
+    {
+      name: "Berita",
+      path: "/news",
+      icon: Newspaper,
     },
     {
       name: "Tentang",

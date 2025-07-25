@@ -1,479 +1,820 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState, useEffect } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { motion } from "framer-motion";
 
-const consultantCardVariant = {
-  hidden: { opacity: 0, y: 20 },
+const fadeIn = {
+  hidden: { opacity: 0, y: 30 },
   visible: (i) => ({
     opacity: 1,
     y: 0,
     transition: {
       delay: i * 0.1,
-      duration: 0.5,
+      duration: 0.6,
       ease: "easeOut",
     },
   }),
 };
 
-const Consult = () => {
-  const canvasRef = useRef(null);
+const slideInFromLeft = {
+  hidden: { opacity: 0, x: -50 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      duration: 0.8,
+      ease: "easeOut",
+    },
+  },
+};
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+const slideInFromRight = {
+  hidden: { opacity: 0, x: 50 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      duration: 0.8,
+      ease: "easeOut",
+    },
+  },
+};
 
-    const updateCanvasSize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
+const ConsultationPage = () => {
+  const [activeTab, setActiveTab] = useState("overview");
+  const { scrollYProgress } = useScroll();
+  const y = useTransform(scrollYProgress, [0, 1], [0, -50]);
 
-    const ctx = canvas.getContext("2d");
-    updateCanvasSize();
-
-    const stars = [];
-    const starCount = 150;
-
-    for (let i = 0; i < starCount; i++) {
-      stars.push({
-        xRatio: Math.random(),
-        yRatio: Math.random(),
-        size: Math.random() * 2.5 + 0.8,
-        opacity: Math.random() * 0.8 + 0.2,
-        speed: Math.random() * 0.04 + 0.01,
-      });
-    }
-
-    let animationFrameId;
-
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "rgba(15, 15, 15, 0.3)";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      stars.forEach((star) => {
-        const x = star.xRatio * canvas.width;
-        const y = star.yRatio * canvas.height;
-
-        ctx.beginPath();
-        ctx.fillStyle = `rgba(6, 182, 212, ${star.opacity})`;
-        ctx.arc(x, y, star.size, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(x, y, star.size * 2, 0, Math.PI * 2);
-        const gradient = ctx.createRadialGradient(x, y, 0, x, y, star.size * 2);
-        gradient.addColorStop(0, `rgba(6, 182, 212, ${star.opacity * 0.5})`);
-        gradient.addColorStop(1, "rgba(6, 182, 212, 0)");
-        ctx.fillStyle = gradient;
-        ctx.fill();
-
-        star.opacity += star.speed;
-
-        if (star.opacity >= 1 || star.opacity <= 0.1) {
-          star.speed = -star.speed;
-        }
-      });
-
-      animationFrameId = requestAnimationFrame(animate);
-    };
-
-    animate();
-
-    const handleResize = () => {
-      updateCanvasSize();
-    };
-
-    window.addEventListener("resize", handleResize);
-
-    const handleScroll = () => {
-      cancelAnimationFrame(animationFrameId);
-      setTimeout(() => {
-        animationFrameId = requestAnimationFrame(animate);
-      }, 100);
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
-
-  const consultants = [
+  const experts = [
     {
-      name: "Ir. Ahmad Hidayat",
-      role: "Senior Civil Engineer",
-      certifications: "IPM, PII, HAKI",
-      bio: "Ahli struktur bangunan dengan pengalaman 15 tahun dalam perencanaan dan evaluasi properti komersial dan residensial. Memiliki keahlian dalam analisis kelayakan lahan.",
-      img: "https://api.dicebear.com/7.x/initials/svg?seed=Ahmad+Hidayat",
+      id: 1,
+      name: "Prof. Dr. Ir. Bambang Setiawan, M.T.",
+      title: "Ahli Perencanaan Wilayah & Mitigasi Bencana",
+      specialization: "Analisis Kelayakan Lahan, Zonasi Bencana",
+      experience: "25+ tahun",
+      certification: "IPM, PII, HAKI, AMDAL-A",
       rating: 4.9,
-      projects: 78,
+      projects: 180,
+      location: "Jakarta, Bandung, Semarang",
+      avatar:
+        "https://api.dicebear.com/7.x/initials/svg?seed=Bambang+Setiawan&backgroundColor=2563eb",
+      expertise: [
+        "Analisis Risiko Banjir",
+        "Perencanaan Tata Ruang",
+        "Kelayakan Infrastruktur",
+      ],
+      price: "Rp 15.000.000 - 25.000.000",
     },
     {
-      name: "Ir. Siti Rahayu, M.T.",
-      role: "Land Development Specialist",
-      certifications: "PII, SKA Madya",
-      bio: "Spesialis pengembangan lahan dengan fokus pada analisis topografi dan mitigasi risiko bencana. Berpengalaman dalam konsultasi properti di berbagai jenis tanah.",
-      img: "https://api.dicebear.com/7.x/initials/svg?seed=Siti+Rahayu",
+      id: 2,
+      name: "Dr. Ir. Sari Handayani, M.Sc.",
+      title: "Spesialis Geoteknik & Stabilitas Tanah",
+      specialization: "Analisis Tanah, Fondasi, Stabilitas Lereng",
+      experience: "18+ tahun",
+      certification: "PII, SKA Utama, HAKI",
       rating: 4.8,
-      projects: 65,
+      projects: 145,
+      location: "Surabaya, Malang, Yogyakarta",
+      avatar:
+        "https://api.dicebear.com/7.x/initials/svg?seed=Sari+Handayani&backgroundColor=7dd3fc",
+      expertise: [
+        "Analisis Daya Dukung Tanah",
+        "Mitigasi Longsor",
+        "Desain Fondasi",
+      ],
+      price: "Rp 12.000.000 - 20.000.000",
     },
     {
-      name: "Ir. Budi Santoso",
-      role: "Infrastructure Consultant",
-      certifications: "HAKI, SKA Utama",
-      bio: "Ahli infrastruktur dengan spesialisasi pada sistem drainase dan utilitas. Membantu klien mengoptimalkan pemanfaatan lahan dengan perencanaan infrastruktur yang tepat.",
-      img: "https://api.dicebear.com/7.x/initials/svg?seed=Budi+Santoso",
-      rating: 4.7,
-      projects: 92,
-    },
-    {
-      name: "Ir. Dian Pertiwi, M.Sc.",
-      role: "Environmental Engineer",
-      certifications: "AMDAL-A, PII",
-      bio: "Spesialis lingkungan dengan keahlian dalam analisis dampak lingkungan untuk pengembangan properti. Menerapkan prinsip pembangunan berkelanjutan dalam setiap proyek.",
-      img: "https://api.dicebear.com/7.x/initials/svg?seed=Dian+Pertiwi",
+      id: 3,
+      name: "Ir. Ahmad Wijaya, Ph.D.",
+      title: "Konsultan Infrastruktur & Utilitas",
+      specialization: "Sistem Drainase, Utilitas Kota",
+      experience: "20+ tahun",
+      certification: "PII, HAKI, SKA Madya",
       rating: 4.9,
-      projects: 71,
+      projects: 165,
+      location: "Medan, Padang, Palembang",
+      avatar:
+        "https://api.dicebear.com/7.x/initials/svg?seed=Ahmad+Wijaya&backgroundColor=84cc16",
+      expertise: [
+        "Perencanaan Drainase",
+        "Infrastruktur Jalan",
+        "Utilitas Underground",
+      ],
+      price: "Rp 10.000.000 - 18.000.000",
     },
   ];
 
-  const services = [
+  const consultationTypes = [
     {
-      title: "Analisis Kelayakan Lahan",
+      icon: "🏛️",
+      title: "Pemerintah Daerah",
       description:
-        "Evaluasi komprehensif terhadap kesesuaian lahan untuk berbagai jenis pengembangan properti.",
-      icon: "📊",
+        "Konsultasi untuk perencanaan tata ruang, zonasi, dan pengembangan wilayah strategis",
+      features: [
+        "Masterplan Kota",
+        "Zonasi Bencana",
+        "Feasibility Study",
+        "RTRW/RDTR",
+      ],
+      bgColor: "bg-gradient-to-br from-blue-50 to-blue-100",
+      borderColor: "border-blue-200",
     },
     {
-      title: "Konsultasi Zonasi & Perizinan",
+      icon: "🏘️",
+      title: "Developer Perumahan",
       description:
-        "Panduan untuk memahami regulasi zonasi dan membantu proses perizinan pembangunan.",
-      icon: "📑",
+        "Analisis kelayakan lahan untuk pengembangan perumahan dan kawasan komersial",
+      features: [
+        "Site Analysis",
+        "Drainage Master",
+        "Infrastructure Planning",
+        "Risk Assessment",
+      ],
+      bgColor: "bg-gradient-to-br from-sky-50 to-sky-100",
+      borderColor: "border-sky-200",
     },
     {
-      title: "Penilaian Risiko Geografis",
-      description:
-        "Identifikasi dan analisis risiko geografis seperti banjir, tanah longsor, dan kondisi tanah.",
-      icon: "⚠️",
-    },
-    {
-      title: "Perencanaan Infrastruktur",
-      description:
-        "Konsultasi untuk perencanaan infrastruktur optimal sesuai dengan kondisi lahan dan kebutuhan.",
       icon: "🏗️",
+      title: "Perusahaan Konstruksi",
+      description:
+        "Konsultasi teknis untuk proyek konstruksi dan infrastruktur berskala besar",
+      features: [
+        "Soil Investigation",
+        "Foundation Design",
+        "Slope Stability",
+        "Construction Method",
+      ],
+      bgColor: "bg-gradient-to-br from-green-50 to-green-100",
+      borderColor: "border-green-200",
+    },
+  ];
+
+  const caseStudies = [
+    {
+      title: "Analisis Anti-Banjir Kawasan Perumahan Serpong",
+      client: "PT. Alam Sutera Realty",
+      description:
+        "Evaluasi komprehensif sistem drainase dan mitigasi banjir untuk pengembangan 500 Ha",
+      result: "Berhasil mengurangi risiko banjir hingga 95%",
+      expert: "Prof. Dr. Ir. Bambang Setiawan",
+      image: "/api/placeholder/400/200",
+      tags: ["Drainage", "Flood Control", "Residential"],
     },
     {
-      title: "Analisis Investasi Properti",
+      title: "Kelayakan Lahan Industri Cikarang",
+      client: "Pemkab Bekasi",
       description:
-        "Evaluasi potensi investasi berdasarkan data spasial dan kondisi pasar properti.",
-      icon: "💰",
-    },
-    {
-      title: "Survei & Pemetaan Lahan",
-      description:
-        "Layanan survei dan pemetaan profesional menggunakan teknologi GIS terkini.",
-      icon: "🗺️",
+        "Studi kelayakan pengembangan kawasan industri dengan fokus stabilitas tanah",
+      result: "Zona industri aman dengan kapasitas 2000+ perusahaan",
+      expert: "Dr. Ir. Sari Handayani",
+      image: "/api/placeholder/400/200",
+      tags: ["Industrial", "Soil Analysis", "Zoning"],
     },
   ];
 
   return (
-    <div className="bg-[#0F0F0F] text-white min-h-screen flex flex-col overflow-hidden relative">
-      {/* Twinkling Stars Canvas */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <canvas
-          ref={canvasRef}
-          className="w-full h-full pointer-events-none z-0"
-        />
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-sky-50 to-blue-50">
+      {/* Hero Section */}
+      <Navbar />
 
-      {/* Background Gradient Circles */}
-      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-        <div
-          className="absolute top-[-25%] left-[-25%] w-[300px] md:w-[600px] h-[300px] md:h-[600px] 
-            bg-gradient-to-r from-cyan-500/20 via-blue-600/10 to-transparent 
-            rounded-full blur-3xl opacity-50"
-        ></div>
-        <div
-          className="absolute bottom-[-25%] right-[-25%] w-[300px] md:w-[600px] h-[300px] md:h-[600px] 
-            bg-gradient-to-r from-cyan-500/20 via-blue-600/10 to-transparent 
-            rounded-full blur-3xl opacity-50"
-        ></div>
-      </div>
-
-      {/* Subtle Grid Background */}
-      <div className="absolute inset-0 bg-grid-white/5 opacity-10 pointer-events-none z-0" />
-
-      <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 flex-1 flex flex-col box-border z-10">
-        <Navbar className="z-20" />
-
-        {/* Hero Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 mb-12 md:mb-16 mt-10 md:mt-20">
-          <div className="flex flex-col justify-center">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-6">
-              <span className="text-cyan-400">Konsultasi</span> Properti
-              Berbasis GIS
-            </h1>
-            <p className="text-base md:text-lg text-gray-400 mb-6">
-              Dapatkan panduan dari para ahli teknik sipil bersertifikasi untuk
-              analisis properti Anda menggunakan data spasial yang akurat. Kami
-              membantu Anda membuat keputusan investasi properti yang tepat
-              melalui pendekatan berbasis data geografis.
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <button
-                className="bg-cyan-500 hover:bg-cyan-600 text-black px-6 md:px-8 py-2 md:py-3 
-                rounded-full font-medium transition-all duration-300 
-                transform hover:-translate-y-1 hover:shadow-lg uppercase text-sm"
-              >
-                Jadwalkan Konsultasi
-              </button>
-              <a
-                href="/maps"
-                className="bg-transparent hover:bg-cyan-900/30 text-cyan-400 border border-cyan-500 
-                px-6 md:px-8 py-2 md:py-3 rounded-full font-medium transition-all duration-300 
-                transform hover:-translate-y-1 hover:shadow-lg uppercase text-sm"
-              >
-                Lihat Properti
-              </a>
-            </div>
-          </div>
-
-          {/* Image Section */}
-          <div className="relative h-64 sm:h-80 md:h-96 mt-6 md:mt-0 order-first md:order-last">
-            <div className="absolute right-0 top-0 w-3/4 h-40 sm:h-48 md:h-56 z-10">
-              <img
-                src="/Consult1.jpg"
-                alt="Konsultasi GIS"
-                className="w-full h-full object-cover rounded-lg shadow-md border border-gray-800"
-              />
-            </div>
-
-            <div className="absolute left-0 bottom-0 w-2/3 h-48 sm:h-56 md:h-64">
-              <img
-                src="/Consult2.jpg"
-                alt="Analisis Properti"
-                className="w-full h-full object-cover rounded-lg shadow-md border border-gray-800"
-              />
-
-              <div className="absolute right-4 md:right-6 bottom-4 md:bottom-6 bg-cyan-500 text-black px-4 md:px-6 py-2 md:py-3 rounded">
-                <p className="font-bold text-xl md:text-2xl">300+</p>
-                <p className="text-base md:text-lg">Konsultasi</p>
+      <motion.section
+        className="py-16 lg:py-24"
+        variants={fadeIn}
+        initial="hidden"
+        animate="visible"
+        custom={0}
+      >
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <motion.div
+              variants={slideInFromLeft}
+              initial="hidden"
+              animate="visible"
+            >
+              <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-medium mb-6">
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Konsultasi Bersertifikat
               </div>
-            </div>
+              <h1 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-6 leading-tight">
+                Konsultasi Ahli
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-sky-400">
+                  {" "}
+                  Sipil Wilayah
+                </span>
+              </h1>
+              <p className="text-xl text-slate-600 mb-8 leading-relaxed">
+                Dapatkan analisis profesional dari ahli sipil bersertifikat
+                untuk perencanaan wilayah, mitigasi bencana, dan pengembangan
+                infrastruktur yang berkelanjutan.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-sky-400 text-white rounded-xl font-semibold hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300">
+                  Mulai Konsultasi
+                </button>
+                <button className="px-8 py-4 bg-white text-slate-700 rounded-xl font-semibold border-2 border-slate-200 hover:border-blue-300 hover:text-blue-600 transition-all duration-300">
+                  Lihat Studi Kasus
+                </button>
+              </div>
+            </motion.div>
+            <motion.div
+              className="relative"
+              variants={slideInFromRight}
+              initial="hidden"
+              animate="visible"
+            >
+              <div className="relative z-10 bg-white rounded-2xl shadow-2xl p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-bold text-slate-800">
+                    Konsultasi Aktif
+                  </h3>
+                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                    Live
+                  </span>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                    <span className="text-slate-600">
+                      Analisis Risiko Banjir - Kota Bekasi
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-slate-600">
+                      Perencanaan Perumahan - Tangerang
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 bg-sky-500 rounded-full animate-pulse"></div>
+                    <span className="text-slate-600">
+                      Studi Kelayakan - Karawang
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-6 pt-6 border-t border-slate-200">
+                  <div className="text-sm text-slate-500 mb-2">
+                    Progress Konsultasi
+                  </div>
+                  <div className="w-full bg-slate-200 rounded-full h-2">
+                    <motion.div
+                      className="bg-gradient-to-r from-blue-500 to-sky-400 h-2 rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: "75%" }}
+                      transition={{ duration: 2, delay: 1 }}
+                    ></motion.div>
+                  </div>
+                </div>
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-sky-400 rounded-2xl blur-xl opacity-20 scale-110"></div>
+            </motion.div>
           </div>
         </div>
+      </motion.section>
 
-        {/* Services Section */}
-        <div className="mb-16 md:mb-24">
-          <h2 className="text-xl md:text-2xl font-bold mb-6 md:mb-10 text-cyan-400">
-            Layanan Konsultasi
-          </h2>
+      {/* Consultation Types */}
+      <motion.section
+        className="py-16 bg-white"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.3 }}
+      >
+        <div className="max-w-7xl mx-auto px-6">
+          <motion.div
+            className="text-center mb-12"
+            variants={fadeIn}
+            custom={0}
+          >
+            <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-4">
+              Layanan Konsultasi Profesional
+            </h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+              Kami melayani berbagai kebutuhan konsultasi untuk pemerintah,
+              developer, dan perusahaan konstruksi
+            </p>
+          </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-            {services.map((service, index) => (
+          <div className="grid md:grid-cols-3 gap-8">
+            {consultationTypes.map((type, index) => (
               <motion.div
-                key={service.title}
-                className="bg-gradient-to-br from-[#1F2937] to-[#111827] rounded-2xl p-[1px] shadow-lg hover:shadow-xl transition-all duration-300"
-                variants={consultantCardVariant}
-                initial="hidden"
-                animate="visible"
+                key={index}
+                className={`${type.bgColor} ${type.borderColor} border-2 rounded-2xl p-8 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2`}
+                variants={fadeIn}
+                custom={index + 1}
+              >
+                <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center mb-6 shadow-sm text-2xl">
+                  {type.icon}
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-3">
+                  {type.title}
+                </h3>
+                <p className="text-slate-600 mb-6">{type.description}</p>
+                <ul className="space-y-2">
+                  {type.features.map((feature, idx) => (
+                    <li key={idx} className="flex items-center text-slate-700">
+                      <svg
+                        className="w-4 h-4 text-green-500 mr-2"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </motion.section>
+
+      {/* Expert Profiles */}
+      <motion.section
+        className="py-16 bg-gradient-to-br from-slate-50 to-sky-50"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.3 }}
+      >
+        <div className="max-w-7xl mx-auto px-6">
+          <motion.div
+            className="text-center mb-12"
+            variants={fadeIn}
+            custom={0}
+          >
+            <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-4">
+              Ahli Sipil Wilayah Bersertifikat
+            </h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+              Tim ahli dengan sertifikasi internasional dan pengalaman puluhan
+              tahun
+            </p>
+          </motion.div>
+
+          <div className="grid lg:grid-cols-3 gap-8">
+            {experts.map((expert, index) => (
+              <motion.div
+                key={expert.id}
+                className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group"
+                variants={fadeIn}
+                custom={index + 1}
+              >
+                <div className="p-8">
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="flex items-center space-x-4">
+                      <img
+                        src={expert.avatar}
+                        alt={expert.name}
+                        className="w-16 h-16 rounded-xl group-hover:scale-110 transition-transform duration-300"
+                      />
+                      <div>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="text-2xl">⭐</span>
+                          <span className="font-bold text-slate-900">
+                            {expert.rating}
+                          </span>
+                        </div>
+                        <p className="text-sm text-slate-500">
+                          {expert.projects} Proyek
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">
+                    {expert.name}
+                  </h3>
+                  <p className="text-blue-600 font-semibold mb-1">
+                    {expert.title}
+                  </p>
+                  <p className="text-slate-600 text-sm mb-4">
+                    {expert.specialization}
+                  </p>
+
+                  <div className="space-y-3 mb-6">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Pengalaman:</span>
+                      <span className="font-medium text-slate-900">
+                        {expert.experience}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Sertifikasi:</span>
+                      <span className="font-medium text-slate-900">
+                        {expert.certification}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500">Wilayah:</span>
+                      <span className="font-medium text-slate-900">
+                        {expert.location}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mb-6">
+                    <p className="text-sm text-slate-500 mb-2">
+                      Keahlian Utama:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {expert.expertise.map((skill, idx) => (
+                        <span
+                          key={idx}
+                          className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-sky-50 rounded-xl">
+                    <p className="text-sm text-slate-600 mb-1">
+                      Tarif Konsultasi:
+                    </p>
+                    <p className="font-bold text-slate-900">{expert.price}</p>
+                  </div>
+
+                  <button className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-sky-400 text-white rounded-xl font-semibold hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300">
+                    Konsultasi Sekarang
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </motion.section>
+
+      {/* Case Studies */}
+      <motion.section
+        className="py-16 bg-white"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.3 }}
+      >
+        <div className="max-w-7xl mx-auto px-6">
+          <motion.div
+            className="text-center mb-12"
+            variants={fadeIn}
+            custom={0}
+          >
+            <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-4">
+              Studi Kasus Sukses
+            </h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+              Lihat bagaimana konsultasi kami membantu klien mencapai hasil
+              optimal
+            </p>
+          </motion.div>
+
+          <div className="grid lg:grid-cols-2 gap-8">
+            {caseStudies.map((study, index) => (
+              <motion.div
+                key={index}
+                className="bg-gradient-to-br from-slate-50 to-sky-50 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 group"
+                variants={slideInFromLeft}
                 custom={index}
               >
-                <div className="bg-[#1A1A1A] rounded-2xl overflow-hidden h-full p-6">
-                  <div className="text-3xl mb-4">{service.icon}</div>
-                  <h3 className="font-semibold text-white text-lg mb-3">
-                    {service.title}
+                <div className="h-48 bg-gradient-to-br from-blue-400 to-sky-300 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                  <div className="absolute inset-0 bg-blue-600/20 group-hover:bg-blue-600/10 transition-colors duration-300"></div>
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <div className="flex flex-wrap gap-2">
+                      {study.tags.map((tag, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2 py-1 bg-white/20 text-white rounded text-xs font-medium backdrop-blur-sm"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-slate-900 mb-2">
+                    {study.title}
                   </h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">
-                    {service.description}
+                  <p className="text-blue-600 font-semibold mb-3">
+                    {study.client}
+                  </p>
+                  <p className="text-slate-600 mb-4">{study.description}</p>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                    <p className="text-green-800 font-semibold">
+                      Hasil: {study.result}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-slate-500">
+                      Konsultan: {study.expert}
+                    </p>
+                    <button className="text-blue-600 hover:text-blue-700 font-medium text-sm group-hover:translate-x-1 transition-transform duration-300">
+                      Selengkapnya →
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </motion.section>
+
+      {/* Enhanced CTA Section */}
+      <motion.section
+        className="py-20 bg-gradient-to-br from-blue-600 via-sky-500 to-blue-700 relative overflow-hidden"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.3 }}
+      >
+        {/* Background Effects */}
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-sky-400/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white/10 rounded-full blur-2xl"></div>
+        </div>
+
+        <motion.div
+          className="max-w-6xl mx-auto px-6 relative z-10"
+          style={{ y }}
+        >
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left Content */}
+            <motion.div variants={slideInFromLeft}>
+              <div className="inline-flex items-center px-4 py-2 bg-white/20 text-white rounded-full text-sm font-medium mb-6 backdrop-blur-sm">
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Mulai Sekarang
+              </div>
+
+              <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
+                Siap Wujudkan
+                <span className="text-sky-200"> Proyek Impian</span> Anda?
+              </h2>
+
+              <p className="text-xl text-blue-100 mb-8 leading-relaxed">
+                Konsultasikan kebutuhan analisis wilayah Anda dengan ahli
+                terpercaya kami. Dapatkan solusi terbaik untuk setiap tantangan
+                proyek Anda.
+              </p>
+
+              {/* Features Grid */}
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                    <svg
+                      className="w-4 h-4 text-white"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <span className="text-white font-medium">
+                    Konsultasi 24/7
+                  </span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                    <svg
+                      className="w-4 h-4 text-white"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                  </div>
+                  <span className="text-white font-medium">
+                    Ahli Bersertifikat
+                  </span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                    <svg
+                      className="w-4 h-4 text-white"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M3 4l9 16 9-16H3z" />
+                    </svg>
+                  </div>
+                  <span className="text-white font-medium">Hasil Terukur</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                    <svg
+                      className="w-4 h-4 text-white"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                    </svg>
+                  </div>
+                  <span className="text-white font-medium">Respons Cepat</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <motion.button
+                  className="px-8 py-4 bg-white text-blue-600 rounded-xl font-semibold hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center space-x-2"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  </svg>
+                  <span>Jadwalkan Konsultasi</span>
+                </motion.button>
+                <motion.button
+                  className="px-8 py-4 bg-transparent text-white border-2 border-white/30 rounded-xl font-semibold hover:bg-white/10 hover:border-white transition-all duration-300 backdrop-blur-sm flex items-center justify-center space-x-2"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  <span>Hubungi Tim Kami</span>
+                </motion.button>
+              </div>
+            </motion.div>
+
+            {/* Right Content - Stats Card */}
+            <motion.div variants={slideInFromRight}>
+              <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20">
+                <div className="text-center mb-8">
+                  <h3 className="text-2xl font-bold text-white mb-2">
+                    Mengapa Memilih Kami?
+                  </h3>
+                  <p className="text-blue-100">
+                    Statistik pencapaian kami berbicara
                   </p>
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
 
-        {/* Consultants Section */}
-        <div className="mb-16 md:mb-24">
-          <div className="flex justify-between items-center mb-6 md:mb-10">
-            <h2 className="text-xl md:text-2xl font-bold text-cyan-400">
-              Konsultan Bersertifikasi
-            </h2>
-            <a
-              href="/consultants"
-              className="text-cyan-400 hover:text-cyan-300 text-sm flex items-center"
-            >
-              Lihat Semua
-              <svg
-                className="w-4 h-4 ml-1"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9 5l7 7-7 7"
-                ></path>
-              </svg>
-            </a>
-          </div>
+                <div className="grid grid-cols-2 gap-6 mb-8">
+                  <div className="text-center">
+                    <motion.div
+                      className="text-4xl font-bold text-white mb-2"
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.8, delay: 0.5 }}
+                    >
+                      500+
+                    </motion.div>
+                    <p className="text-blue-100 text-sm">Proyek Selesai</p>
+                  </div>
+                  <div className="text-center">
+                    <motion.div
+                      className="text-4xl font-bold text-white mb-2"
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.8, delay: 0.7 }}
+                    >
+                      98%
+                    </motion.div>
+                    <p className="text-blue-100 text-sm">Tingkat Kepuasan</p>
+                  </div>
+                  <div className="text-center">
+                    <motion.div
+                      className="text-4xl font-bold text-white mb-2"
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.8, delay: 0.9 }}
+                    >
+                      25+
+                    </motion.div>
+                    <p className="text-blue-100 text-sm">Tahun Pengalaman</p>
+                  </div>
+                  <div className="text-center">
+                    <motion.div
+                      className="text-4xl font-bold text-white mb-2"
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.8, delay: 1.1 }}
+                    >
+                      50+
+                    </motion.div>
+                    <p className="text-blue-100 text-sm">Kota Terjangkau</p>
+                  </div>
+                </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-            {consultants.map((consultant, index) => (
-              <motion.div
-                key={consultant.name}
-                className="group bg-gradient-to-br from-[#1F2937] to-[#111827] rounded-2xl p-[1px] shadow-lg hover:shadow-xl transition-all duration-300"
-                variants={consultantCardVariant}
-                initial="hidden"
-                animate="visible"
-                custom={index}
-              >
-                <div className="bg-[#1A1A1A] rounded-2xl overflow-hidden flex flex-col h-full">
-                  {/* Image */}
-                  <div className="w-full h-40 sm:h-48 md:h-56 relative">
-                    <img
-                      src={consultant.img}
-                      alt={consultant.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = "/placeholder-image.jpg";
-                      }}
-                    />
-                    <div className="absolute top-3 right-3 bg-cyan-500 text-black px-2 py-1 rounded-md text-xs font-medium flex items-center">
-                      <svg
-                        className="w-3 h-3 mr-1"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                      </svg>
-                      {consultant.rating}
+                {/* Progress Bars */}
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between text-white text-sm mb-2">
+                      <span>Analisis Akurasi</span>
+                      <span>95%</span>
+                    </div>
+                    <div className="w-full bg-white/20 rounded-full h-2">
+                      <motion.div
+                        className="bg-gradient-to-r from-sky-300 to-white h-2 rounded-full"
+                        initial={{ width: 0 }}
+                        whileInView={{ width: "95%" }}
+                        transition={{ duration: 1.5, delay: 0.5 }}
+                      ></motion.div>
                     </div>
                   </div>
-
-                  {/* Content */}
-                  <div className="p-4 sm:p-5 md:p-6 flex flex-col justify-between flex-grow">
-                    <div>
-                      <h3 className="font-semibold text-white text-lg sm:text-xl mb-1">
-                        {consultant.name}
-                      </h3>
-                      <div className="flex flex-col gap-2 mb-3">
-                        <span className="inline-block bg-cyan-800/30 text-cyan-300 text-xs font-medium px-3 py-1 rounded-full">
-                          {consultant.role}
-                        </span>
-                        <span className="text-gray-400 text-xs">
-                          Sertifikasi: {consultant.certifications}
-                        </span>
-                        <span className="text-gray-400 text-xs">
-                          {consultant.projects} Proyek Selesai
-                        </span>
-                      </div>
-                      <p className="text-gray-400 text-sm leading-relaxed line-clamp-3">
-                        {consultant.bio}
-                      </p>
+                  <div>
+                    <div className="flex justify-between text-white text-sm mb-2">
+                      <span>Waktu Penyelesaian</span>
+                      <span>92%</span>
                     </div>
-
-                    <div className="mt-4 sm:mt-5">
-                      <button className="inline-block w-full text-center bg-cyan-500 hover:bg-cyan-400 text-white text-sm sm:text-base font-medium py-2 px-4 rounded-lg transition-colors duration-200">
-                        Jadwalkan Konsultasi
-                      </button>
+                    <div className="w-full bg-white/20 rounded-full h-2">
+                      <motion.div
+                        className="bg-gradient-to-r from-sky-300 to-white h-2 rounded-full"
+                        initial={{ width: 0 }}
+                        whileInView={{ width: "92%" }}
+                        transition={{ duration: 1.5, delay: 0.7 }}
+                      ></motion.div>
                     </div>
                   </div>
                 </div>
-              </motion.div>
-            ))}
+
+                <div className="mt-8 p-4 bg-white/10 rounded-xl border border-white/20">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                      <svg
+                        className="w-6 h-6 text-white"
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-white font-semibold">
+                        Garansi Kepuasan
+                      </p>
+                      <p className="text-blue-100 text-sm">
+                        100% uang kembali jika tidak puas
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           </div>
-        </div>
 
-        {/* Process Section */}
-        <div className="mb-16 md:mb-24">
-          <h2 className="text-xl md:text-2xl font-bold mb-6 md:mb-10 text-cyan-400">
-            Proses Konsultasi
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-            <div className="bg-[#1A1A1A] rounded-2xl p-6 border border-gray-800 relative">
-              <div className="absolute top-4 left-4 bg-cyan-500 text-black w-8 h-8 rounded-full flex items-center justify-center font-bold">
-                1
+          {/* Bottom CTA */}
+          <motion.div
+            className="text-center mt-16"
+            variants={fadeIn}
+            custom={2}
+          >
+            <div className="inline-flex items-center space-x-4 bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+              <div className="flex -space-x-2">
+                <img
+                  className="w-10 h-10 rounded-full border-2 border-white"
+                  src="https://api.dicebear.com/7.x/initials/svg?seed=Expert1&backgroundColor=2563eb"
+                  alt="Expert"
+                />
+                <img
+                  className="w-10 h-10 rounded-full border-2 border-white"
+                  src="https://api.dicebear.com/7.x/initials/svg?seed=Expert2&backgroundColor=7dd3fc"
+                  alt="Expert"
+                />
+                <img
+                  className="w-10 h-10 rounded-full border-2 border-white"
+                  src="https://api.dicebear.com/7.x/initials/svg?seed=Expert3&backgroundColor=84cc16"
+                  alt="Expert"
+                />
               </div>
-              <h3 className="font-semibold text-white text-lg mb-3 pl-10">
-                Pengumpulan Data
-              </h3>
-              <p className="text-gray-400 text-sm leading-relaxed">
-                Kami mengumpulkan data spasial dan informasi properti yang
-                relevan untuk analisis komprehensif.
-              </p>
-            </div>
-
-            <div className="bg-[#1A1A1A] rounded-2xl p-6 border border-gray-800 relative">
-              <div className="absolute top-4 left-4 bg-cyan-500 text-black w-8 h-8 rounded-full flex items-center justify-center font-bold">
-                2
+              <div className="text-left">
+                <p className="text-white font-semibold">
+                  Tim ahli siap membantu Anda
+                </p>
+                <p className="text-blue-100 text-sm">
+                  Konsultasi gratis 15 menit pertama
+                </p>
               </div>
-              <h3 className="font-semibold text-white text-lg mb-3 pl-10">
-                Analisis GIS
-              </h3>
-              <p className="text-gray-400 text-sm leading-relaxed">
-                Tim ahli kami menganalisis data menggunakan teknologi GIS untuk
-                mendapatkan insight mendalam.
-              </p>
+              <button className="px-6 py-2 bg-white text-blue-600 rounded-xl font-semibold hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300">
+                Mulai Chat
+              </button>
             </div>
+          </motion.div>
+        </motion.div>
+      </motion.section>
 
-            <div className="bg-[#1A1A1A] rounded-2xl p-6 border border-gray-800 relative">
-              <div className="absolute top-4 left-4 bg-cyan-500 text-black w-8 h-8 rounded-full flex items-center justify-center font-bold">
-                3
-              </div>
-              <h3 className="font-semibold text-white text-lg mb-3 pl-10">
-                Rekomendasi & Laporan
-              </h3>
-              <p className="text-gray-400 text-sm leading-relaxed">
-                Anda menerima laporan terperinci dengan rekomendasi spesifik
-                berdasarkan analisis kami.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* CTA Section */}
-        <div className="mb-16 md:mb-24">
-          <div className="bg-gradient-to-r from-cyan-900/50 to-blue-900/50 rounded-2xl p-6 md:p-10 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[url('/pattern.png')] opacity-10"></div>
-            <div className="relative z-10">
-              <h2 className="text-2xl md:text-3xl font-bold mb-4 text-white">
-                Siap untuk mengoptimalkan investasi properti Anda?
-              </h2>
-              <p className="text-gray-300 text-base md:text-lg mb-6 max-w-2xl">
-                Manfaatkan keahlian konsultan bersertifikasi kami untuk
-                mendapatkan insight berbasis data geografis yang akan membantu
-                Anda membuat keputusan investasi yang tepat.
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <button className="bg-cyan-500 hover:bg-cyan-600 text-black px-6 md:px-8 py-2 md:py-3 rounded-full font-medium transition-all duration-300">
-                  Jadwalkan Konsultasi Sekarang
-                </button>
-                <a
-                  href="/maps"
-                  className="bg-transparent hover:bg-white/10 text-white border border-white px-6 md:px-8 py-2 md:py-3 rounded-full font-medium transition-all duration-300"
-                >
-                  Lihat Properti di Peta
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <Footer />
-      </div>
+      <Footer />
     </div>
   );
 };
 
-export default Consult;
+export default ConsultationPage;
