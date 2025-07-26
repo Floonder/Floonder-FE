@@ -23,9 +23,12 @@ const Footer = () => {
         <div className="grid md:grid-cols-4 gap-8 items-start">
           {/* Brand Section */}
           <div className="space-y-4 md:col-span-1">
-            <h2 className="text-3xl font-bold text-slate-800">
-              Flo<span className="text-blue-600">onder</span>
-            </h2>
+            <span className="font-bold text-3xl">
+              Flo
+              <span className="bg-gradient-to-r from-blue-500 to-green-500 bg-clip-text text-transparent">
+                onder
+              </span>
+            </span>
             <p className="text-slate-600 text-sm leading-relaxed">
               Sistem GIS terdepan untuk penanganan banjir dan mitigasi risiko.
               Membantu pemerintah dan masyarakat dalam penanggulangan bencana.
@@ -59,19 +62,19 @@ const Footer = () => {
             </h3>
             <ul className="space-y-3 text-slate-600">
               {[
-                "Beranda",
-                "Peta Banjir",
-                "Monitoring",
-                "Peringatan Dini",
-                "Tentang Kami",
+                { name: "Beranda", href: "/" },
+                { name: "Peta Banjir", href: "/maps" },
+                { name: "Analisis", href: "/analytics" },
+                { name: "Status Cuaca", href: "/weather" },
+                { name: "Tentang Kami", href: "/about" },
               ].map((item) => (
-                <li key={item}>
+                <li key={item.name}>
                   <a
-                    href="#"
+                    href={item.href}
                     className="hover:text-blue-600 transition-colors duration-200 text-sm flex items-center space-x-2"
                   >
                     <div className="w-1 h-1 bg-blue-400 rounded-full"></div>
-                    <span>{item}</span>
+                    <span>{item.name}</span>
                   </a>
                 </li>
               ))}
@@ -91,14 +94,12 @@ const Footer = () => {
                 "Dashboard Monitoring",
                 "Laporan Kejadian",
               ].map((item) => (
-                <li key={item}>
-                  <a
-                    href="#"
-                    className="hover:text-blue-600 transition-colors duration-200 text-sm flex items-center space-x-2"
-                  >
-                    <div className="w-1 h-1 bg-cyan-400 rounded-full"></div>
-                    <span>{item}</span>
-                  </a>
+                <li
+                  key={item}
+                  className="text-sm flex items-center space-x-2 hover:text-blue-600 transition-colors duration-200"
+                >
+                  <div className="w-1 h-1 bg-cyan-400 rounded-full"></div>
+                  <span>{item}</span>
                 </li>
               ))}
             </ul>
@@ -127,9 +128,9 @@ const Footer = () => {
                   <MapPin size={16} className="text-blue-600" />
                 </div>
                 <span>
-                  Jakarta, Indonesia
+                  Bandung, Indonesia
                   <br />
-                  Pusat Teknologi GIS
+                  Telkom University, Jl. Telekomunikasi
                 </span>
               </div>
             </div>
@@ -145,9 +146,11 @@ const Footer = () => {
             </span>
             <div className="flex space-x-3">
               {[
-                { name: "BMKG", src: "/bmkg-logo.png" },
-                { name: "BPBD", src: "/bpbd-logo.png" },
-                { name: "Kemendagri", src: "/kemendagri-logo.png" },
+                { name: "BMKG", src: "/BMKG.png" },
+                { name: "BPNP", src: "/BNPB.png" },
+                { name: "Kemendagri", src: "/Kemendagri.png" },
+                { name: "PUPR", src: "/PUPR.png" },
+                { name: "Telkom University", src: "/telkom.png" },
               ].map((partner, index) => (
                 <div
                   key={index}
