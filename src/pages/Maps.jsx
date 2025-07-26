@@ -60,7 +60,7 @@ function Maps() {
   ];
 
   // Map style state and options
-  const [mapStyle, setMapStyle] = useState("dark"); // Default style
+  const [mapStyle, setMapStyle] = useState("street"); // Default style
   const mapStyles = {
     dark: `https://basemap.mapid.io/styles/dark/style.json?key=${MAP_SERVICE_KEY}`,
     street: `https://basemap.mapid.io/styles/street-new-generation/style.json?key=${MAP_SERVICE_KEY}`,

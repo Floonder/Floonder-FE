@@ -8,7 +8,6 @@ import {
   AlertTriangle,
   Activity,
   MessageCircle,
-  Phone,
   User,
   ChevronDown,
   Newspaper,

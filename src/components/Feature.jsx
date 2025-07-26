@@ -1,11 +1,38 @@
 import React from "react";
 
 const Feature = () => {
-  const gisServices = [
+  const flooderServices = [
     {
-      title: "Spatial Data Mapping",
+      title: "Prediksi Banjir Berbasis Lokasi",
       description:
-        "Advanced geospatial data visualization and analysis with high-precision mapping technologies.",
+        "Sistem prediksi akurat yang menganalisis data curah hujan, topografi, dan hidrologi untuk memberikan peringatan dini banjir berdasarkan lokasi spesifik.",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-12 h-12"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+          />
+        </svg>
+      ),
+    },
+    {
+      title: "Peta Interaktif & Data Historis",
+      description:
+        "Visualisasi peta Indonesia yang interaktif dengan overlay data cuaca real-time, riwayat banjir, dan prediksi curah hujan untuk analisis mendalam.",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -24,9 +51,9 @@ const Feature = () => {
       ),
     },
     {
-      title: "Geospatial Analysis",
+      title: "Notifikasi Peringatan Dini",
       description:
-        "Powerful analytics tools for complex spatial data processing, pattern recognition, and predictive modeling.",
+        "Sistem notifikasi otomatis yang mengirimkan peringatan dini kepada masyarakat dan instansi terkait ketika terdeteksi potensi banjir di wilayah tertentu.",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -39,15 +66,21 @@ const Feature = () => {
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth="2"
-            d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+            d="M15 17h5l-5 5v-5zM4.828 7l4.24-4.24a2 2 0 112.828 2.828L7.656 9.828A2 2 0 014.828 7zM10 10l8 8m-8-8L8.172 8.172M12 5l7 7-7 7"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
           />
         </svg>
       ),
     },
     {
-      title: "Interactive Mapping",
+      title: "Analisis Wilayah Rawan Banjir",
       description:
-        "Dynamic, real-time map interfaces with layer management, custom styling, and interactive data exploration.",
+        "Identifikasi dan pemetaan zona-zona rawan banjir menggunakan analisis spasial untuk mendukung perencanaan mitigasi dan pembangunan infrastruktur.",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -60,13 +93,7 @@ const Feature = () => {
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth="2"
-            d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"
-          />
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
           />
         </svg>
       ),
@@ -78,23 +105,23 @@ const Feature = () => {
       <div className="container max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-12 md:mb-16">
           <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-            Floonder <span className="text-blue-600">Services</span>
+            Fitur <span className="text-blue-600">Floonder</span>
           </h2>
           <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Comprehensive Geographic Information System solutions for advanced
-            spatial data management and visualization.
+            Solusi komprehensif untuk prediksi dan mitigasi banjir di Indonesia
+            dengan teknologi GIS terdepan dan analisis data spasial yang akurat.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-          {gisServices.map((service, index) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 md:gap-8">
+          {flooderServices.map((service, index) => (
             <div
               key={index}
               className="bg-white/80 backdrop-blur-sm p-6 md:p-8 rounded-2xl border border-gray-200
               transform transition-all duration-300 hover:scale-105
               hover:shadow-2xl hover:bg-white group shadow-lg"
             >
-              <div className="flex flex-col items-center text-center mb-6">
+              <div className="flex flex-col items-start text-left mb-6">
                 <div className="bg-blue-100 p-4 rounded-2xl mb-4 group-hover:bg-blue-200 transition-colors duration-300">
                   <span className="text-blue-600 w-12 h-12 flex items-center justify-center">
                     {service.icon}
@@ -116,7 +143,7 @@ const Feature = () => {
                 text-sm md:text-base font-semibold w-full
                 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg"
               >
-                <span>Explore Service</span>
+                <span>Pelajari Lebih Lanjut</span>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-4 w-4 md:h-5 md:w-5 transition-transform group-hover:translate-x-1"
@@ -134,6 +161,43 @@ const Feature = () => {
               </a>
             </div>
           ))}
+        </div>
+
+        {/* Additional Info Section */}
+        <div className="mt-16 text-center">
+          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-3xl p-8 md:p-12 border border-blue-100">
+            <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+              Mengapa Memilih Floonder?
+            </h3>
+            <p className="text-lg text-gray-600 mb-8 max-w-3xl mx-auto">
+              Floonder mengintegrasikan data dari berbagai sumber seperti BMKG,
+              satelit, dan sensor IoT untuk memberikan prediksi banjir yang
+              paling akurat di Indonesia.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white/70 p-6 rounded-2xl">
+                <div className="text-3xl mb-3">🌊</div>
+                <h4 className="font-bold text-gray-900 mb-2">Real-time Data</h4>
+                <p className="text-sm text-gray-600">
+                  Data cuaca dan hidrologi terkini
+                </p>
+              </div>
+              <div className="bg-white/70 p-6 rounded-2xl">
+                <div className="text-3xl mb-3">🎯</div>
+                <h4 className="font-bold text-gray-900 mb-2">Akurasi Tinggi</h4>
+                <p className="text-sm text-gray-600">
+                  Prediksi dengan tingkat akurasi 95%
+                </p>
+              </div>
+              <div className="bg-white/70 p-6 rounded-2xl">
+                <div className="text-3xl mb-3">📱</div>
+                <h4 className="font-bold text-gray-900 mb-2">User-Friendly</h4>
+                <p className="text-sm text-gray-600">
+                  Interface mudah digunakan
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

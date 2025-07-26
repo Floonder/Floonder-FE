@@ -14,14 +14,15 @@ const FAQ = () => {
           <div className="md:col-span-2">
             <div className="max-w-lg">
               <h2 className="text-4xl md:text-5xl font-bold md:leading-tight text-gray-900 mb-6">
-                GIS <span className="text-blue-600">FAQ</span>
+                Floonder <span className="text-blue-600">FAQ</span>
               </h2>
               <p className="text-lg text-gray-600 leading-relaxed mb-8">
-                Frequently Asked Questions
+                Pertanyaan yang Sering Diajukan
               </p>
               <p className="text-base text-gray-600 leading-relaxed">
-                Temukan jawaban komprehensif tentang layanan GIS kami. Kami siap
-                membantu Anda memahami solusi geografis inovatif kami.
+                Temukan jawaban lengkap tentang sistem prediksi banjir Floonder.
+                Kami siap membantu Anda memahami cara kerja platform kami dalam
+                mencegah dan mitigasi banjir di Indonesia.
               </p>
             </div>
           </div>
@@ -30,34 +31,29 @@ const FAQ = () => {
             <div className="space-y-4">
               {[
                 {
-                  question: "Apa itu Teknologi GIS?",
+                  question: "Apa itu Floonder dan bagaimana cara kerjanya?",
                   answer:
-                    "Sistem Informasi Geografis (GIS) adalah teknologi canggih yang memungkinkan analisis, manajemen, dan visualisasi data spasial dengan presisi tinggi.",
+                    "Floonder adalah platform prediksi banjir berbasis Web GIS yang mengintegrasikan data curah hujan, topografi, hidrologi, dan cuaca real-time untuk memberikan prediksi banjir yang akurat. Sistem kami menggunakan algoritma machine learning dan analisis spasial untuk memproses data dari berbagai sumber seperti BMKG, satelit, dan sensor IoT.",
                 },
                 {
-                  question: "Bagaimana GIS Dapat Membantu Bisnis Saya?",
+                  question: "Seberapa akurat prediksi banjir Floonder?",
                   answer:
-                    "GIS dapat mengoptimalkan strategi bisnis Anda melalui analisis lokasi, pemetaan pasar, manajemen aset, dan pengambilan keputusan berbasis spasial.",
+                    "Floonder memiliki tingkat akurasi prediksi hingga 95% berdasarkan validasi data historis dan monitoring real-time. Akurasi ini dicapai melalui kombinasi data meteorologi, hidrologi, dan topografi yang diproses menggunakan algoritma AI terdepan.",
                 },
                 {
-                  question: "Apakah Layanan GIS Kami Disesuaikan?",
+                  question: "Wilayah mana saja yang dicakup oleh Floonder?",
                   answer:
-                    "Kami menawarkan solusi GIS yang sepenuhnya dapat disesuaikan, disesuaikan dengan kebutuhan spesifik industri dan model bisnis Anda.",
+                    "Floonder mencakup seluruh wilayah Indonesia dengan fokus khusus pada 34 provinsi dan daerah rawan banjir. Sistem kami memberikan prediksi detail untuk kota-kota besar seperti Jakarta, Bandung, Surabaya, Medan, dan wilayah lainnya yang memiliki risiko banjir tinggi.",
                 },
                 {
-                  question: "Berapa Lama Proses Implementasi?",
+                  question: "Apakah Floonder gratis untuk digunakan?",
                   answer:
-                    "Waktu implementasi bervariasi tergantung kompleksitas proyek, namun kami berkomitmen untuk proses yang efisien dan transparan.",
+                    "Floonder menyediakan akses gratis untuk fitur dasar seperti peta interaktif dan peringatan banjir umum. Untuk fitur premium seperti prediksi detail per lokasi, analisis historis mendalam, dan API access, tersedia paket berlangganan dengan harga terjangkau.",
                 },
                 {
-                  question: "Keamanan Data Bagaimana?",
+                  question: "Bagaimana keamanan dan privasi data pengguna?",
                   answer:
-                    "Keamanan data adalah prioritas utama kami. Kami menggunakan protokol enkripsi terkini dan praktik keamanan tercanggih.",
-                },
-                {
-                  question: "Dukungan Pasca-Implementasi",
-                  answer:
-                    "Tim kami menyediakan dukungan berkelanjutan, pelatihan, dan pemeliharaan untuk memastikan kesuksesan jangka panjang solusi GIS Anda.",
+                    "Keamanan data adalah prioritas utama Floonder. Kami menggunakan enkripsi end-to-end, protokol keamanan SSL, dan mematuhi standar keamanan internasional. Data lokasi pengguna hanya digunakan untuk memberikan prediksi yang akurat dan tidak dibagikan kepada pihak ketiga tanpa persetujuan.",
                 },
               ].map((faq, index) => (
                 <div
