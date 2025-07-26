@@ -271,7 +271,7 @@ const FloonderNews = () => {
         </div>
 
         {/* Floating particles */}
-        <div className="absolute inset-0">
+        {/* <div className="absolute inset-0">
           {[...Array(15)].map((_, i) => (
             <div
               key={`particle-${i}`}
@@ -289,7 +289,7 @@ const FloonderNews = () => {
               }}
             />
           ))}
-        </div>
+        </div> */}
       </div>
 
       {/* Add keyframes for animations */}
