@@ -28,6 +28,9 @@ const Feature = () => {
           />
         </svg>
       ),
+      gradient: "from-blue-500 to-cyan-400",
+      iconBg: "bg-gradient-to-br from-blue-100 to-cyan-50",
+      hoverIconBg: "group-hover:from-blue-200 group-hover:to-cyan-100",
     },
     {
       title: "Peta Interaktif & Data Historis",
@@ -49,6 +52,9 @@ const Feature = () => {
           />
         </svg>
       ),
+      gradient: "from-emerald-500 to-teal-400",
+      iconBg: "bg-gradient-to-br from-emerald-100 to-teal-50",
+      hoverIconBg: "group-hover:from-emerald-200 group-hover:to-teal-100",
     },
     {
       title: "Notifikasi Peringatan Dini",
@@ -66,16 +72,19 @@ const Feature = () => {
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth="2"
-            d="M15 17h5l-5 5v-5zM4.828 7l4.24-4.24a2 2 0 112.828 2.828L7.656 9.828A2 2 0 014.828 7zM10 10l8 8m-8-8L8.172 8.172M12 5l7 7-7 7"
+            d="M15 17h5l-5 5v-5z"
           />
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth="2"
-            d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"
+            d="M4 17v2a2 2 0 002 2h4m-6 0v-5a6 6 0 016-6v0a6 6 0 016 6v5h2a2 2 0 002-2v-2"
           />
         </svg>
       ),
+      gradient: "from-orange-500 to-amber-400",
+      iconBg: "bg-gradient-to-br from-orange-100 to-amber-50",
+      hoverIconBg: "group-hover:from-orange-200 group-hover:to-amber-100",
     },
     {
       title: "Analisis Wilayah Rawan Banjir",
@@ -97,17 +106,29 @@ const Feature = () => {
           />
         </svg>
       ),
+      gradient: "from-purple-500 to-indigo-400",
+      iconBg: "bg-gradient-to-br from-purple-100 to-indigo-50",
+      hoverIconBg: "group-hover:from-purple-200 group-hover:to-indigo-100",
     },
   ];
 
   return (
-    <section className="relative text-gray-900 py-16 md:py-24 px-4 overflow-hidden bg-gray-50">
+    <section className="relative text-gray-900 py-16 md:py-24 px-4 overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50/30 to-cyan-50/50">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-blue-200/20 to-cyan-200/20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-r from-emerald-200/20 to-teal-200/20 rounded-full blur-3xl"></div>
+      </div>
+
       <div className="container max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-            Fitur <span className="text-blue-600">Floonder</span>
+          <h2 className="text-4xl md:text-6xl font-bold mb-6">
+            Fitur{" "}
+            <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-teal-500 bg-clip-text text-transparent">
+              Floonder
+            </span>
           </h2>
-          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
             Solusi komprehensif untuk prediksi dan mitigasi banjir di Indonesia
             dengan teknologi GIS terdepan dan analisis data spasial yang akurat.
           </p>
@@ -117,84 +138,117 @@ const Feature = () => {
           {flooderServices.map((service, index) => (
             <div
               key={index}
-              className="bg-white/80 backdrop-blur-sm p-6 md:p-8 rounded-2xl border border-gray-200
-              transform transition-all duration-300 hover:scale-105
-              hover:shadow-2xl hover:bg-white group shadow-lg"
+              className="bg-white/90 backdrop-blur-sm p-6 md:p-8 rounded-3xl border border-white/50 shadow-xl
+              transform transition-all duration-500 hover:scale-[1.02]
+              hover:shadow-2xl hover:bg-white group relative overflow-hidden"
             >
-              <div className="flex flex-col items-start text-left mb-6">
-                <div className="bg-blue-100 p-4 rounded-2xl mb-4 group-hover:bg-blue-200 transition-colors duration-300">
-                  <span className="text-blue-600 w-12 h-12 flex items-center justify-center">
-                    {service.icon}
-                  </span>
+              {/* Card gradient overlay */}
+              <div
+                className={`absolute inset-0 bg-gradient-to-br ${service.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-500 rounded-3xl`}
+              ></div>
+
+              <div className="relative z-10">
+                <div className="flex flex-col items-start text-left mb-6">
+                  <div
+                    className={`${service.iconBg} ${service.hoverIconBg} p-4 rounded-2xl mb-4 transition-all duration-500 transform group-hover:scale-110`}
+                  >
+                    <span
+                      className={`bg-gradient-to-br ${service.gradient} bg-clip-text text-transparent w-12 h-12 flex items-center justify-center`}
+                    >
+                      {service.icon}
+                    </span>
+                  </div>
+                  <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-3 group-hover:text-slate-900 transition-colors">
+                    {service.title}
+                  </h3>
                 </div>
-                <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-3">
-                  {service.title}
-                </h3>
-              </div>
 
-              <p className="text-sm md:text-base text-gray-600 mb-6 leading-relaxed">
-                {service.description}
-              </p>
+                <p className="text-sm md:text-base text-slate-600 mb-6 leading-relaxed group-hover:text-slate-700 transition-colors">
+                  {service.description}
+                </p>
 
-              <a
-                href="#"
-                className="inline-flex items-center justify-center space-x-2 text-white 
-                bg-blue-600 hover:bg-blue-700 px-6 md:px-8 py-3 rounded-xl 
-                text-sm md:text-base font-semibold w-full
-                transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg"
-              >
-                <span>Pelajari Lebih Lanjut</span>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4 md:h-5 md:w-5 transition-transform group-hover:translate-x-1"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+                <button
+                  className={`inline-flex items-center justify-center space-x-2 text-white 
+                  bg-gradient-to-r ${service.gradient} hover:shadow-lg px-6 md:px-8 py-3 rounded-xl 
+                  text-sm md:text-base font-semibold w-full
+                  transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl
+                  relative overflow-hidden group/btn`}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M13 7l5 5m0 0l-5 5m5-5H6"
-                  />
-                </svg>
-              </a>
+                  <div className="absolute inset-0 bg-white/20 scale-x-0 group-hover/btn:scale-x-100 transition-transform duration-300 origin-left"></div>
+                  <span className="relative z-10">Pelajari Lebih Lanjut</span>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 md:h-5 md:w-5 transition-transform group-hover/btn:translate-x-1 relative z-10"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
           ))}
         </div>
 
         {/* Additional Info Section */}
         <div className="mt-16 text-center">
-          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-3xl p-8 md:p-12 border border-blue-100">
-            <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-              Mengapa Memilih Floonder?
-            </h3>
-            <p className="text-lg text-gray-600 mb-8 max-w-3xl mx-auto">
-              Floonder mengintegrasikan data dari berbagai sumber seperti BMKG,
-              satelit, dan sensor IoT untuk memberikan prediksi banjir yang
-              paling akurat di Indonesia.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white/70 p-6 rounded-2xl">
-                <div className="text-3xl mb-3">🌊</div>
-                <h4 className="font-bold text-gray-900 mb-2">Real-time Data</h4>
-                <p className="text-sm text-gray-600">
-                  Data cuaca dan hidrologi terkini
-                </p>
-              </div>
-              <div className="bg-white/70 p-6 rounded-2xl">
-                <div className="text-3xl mb-3">🎯</div>
-                <h4 className="font-bold text-gray-900 mb-2">Akurasi Tinggi</h4>
-                <p className="text-sm text-gray-600">
-                  Prediksi dengan tingkat akurasi 95%
-                </p>
-              </div>
-              <div className="bg-white/70 p-6 rounded-2xl">
-                <div className="text-3xl mb-3">📱</div>
-                <h4 className="font-bold text-gray-900 mb-2">User-Friendly</h4>
-                <p className="text-sm text-gray-600">
-                  Interface mudah digunakan
-                </p>
+          <div className="bg-gradient-to-br from-white/80 to-blue-50/80 backdrop-blur-sm rounded-3xl p-8 md:p-12 border border-white/60 shadow-2xl relative overflow-hidden">
+            {/* Background decoration */}
+            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-cyan-200/30 to-blue-200/30 rounded-full blur-2xl"></div>
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-emerald-200/30 to-teal-200/30 rounded-full blur-2xl"></div>
+
+            <div className="relative z-10">
+              <h3 className="text-2xl md:text-3xl font-bold text-slate-800 mb-4">
+                Mengapa Memilih{" "}
+                <span className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">
+                  Floonder?
+                </span>
+              </h3>
+              <p className="text-lg text-slate-600 mb-8 max-w-3xl mx-auto">
+                Floonder mengintegrasikan data dari berbagai sumber seperti
+                BMKG, satelit, dan sensor IoT untuk memberikan prediksi banjir
+                yang paling akurat di Indonesia.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-white/50 shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl group">
+                  <div className="text-4xl mb-3 transform transition-transform group-hover:scale-110">
+                    🌊
+                  </div>
+                  <h4 className="font-bold text-slate-800 mb-2">
+                    Real-time Data
+                  </h4>
+                  <p className="text-sm text-slate-600">
+                    Data cuaca dan hidrologi terkini
+                  </p>
+                </div>
+                <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-white/50 shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl group">
+                  <div className="text-4xl mb-3 transform transition-transform group-hover:scale-110">
+                    🎯
+                  </div>
+                  <h4 className="font-bold text-slate-800 mb-2">
+                    Akurasi Tinggi
+                  </h4>
+                  <p className="text-sm text-slate-600">
+                    Prediksi dengan tingkat akurasi 95%
+                  </p>
+                </div>
+                <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl border border-white/50 shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl group">
+                  <div className="text-4xl mb-3 transform transition-transform group-hover:scale-110">
+                    📱
+                  </div>
+                  <h4 className="font-bold text-slate-800 mb-2">
+                    User-Friendly
+                  </h4>
+                  <p className="text-sm text-slate-600">
+                    Interface mudah digunakan
+                  </p>
+                </div>
               </div>
             </div>
           </div>
