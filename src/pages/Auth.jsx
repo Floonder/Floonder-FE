@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { loginUser, storeAuthData } from "../services/authapi";
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
@@ -10,6 +11,8 @@ const SignIn = () => {
   const [error, setError] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -26,48 +29,14 @@ const SignIn = () => {
     setError("");
 
     try {
-      const apiUrl = `${import.meta.env.VITE_HOST_API}/api/auth/login`;
+      // Call login API
+      const data = await loginUser(email, password);
 
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-        mode: "cors",
-      });
+      // Store authentication data
+      storeAuthData(data);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage = "Login failed";
-
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-          errorMessage = errorText || errorMessage;
-        }
-
-        throw new Error(errorMessage);
-      }
-
-      const data = await response.json();
-
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
-      if (data.data && data.data.access) {
-        localStorage.setItem("accessToken", data.data.access);
-      }
-      if (data.data && data.data.email) {
-        const userData = {
-          email: data.data.email,
-          id: data.data.id,
-        };
-        localStorage.setItem("user", JSON.stringify(userData));
-      }
-
-      // navigate("/dashboard");
+      // Navigate to dashboard
+      navigate("/dashboard");
     } catch (err) {
       console.error("Login error:", err);
       setError(err.message || "An error occurred during login");
