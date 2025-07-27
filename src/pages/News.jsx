@@ -61,71 +61,77 @@ const FloonderNews = () => {
 
   const categories = [
     "Semua",
-    "Teknologi",
-    "Bisnis",
-    "Olahraga",
-    "Hiburan",
-    "Politik",
-    "Kesehatan",
+    "Teknologi GIS",
+    "Mitigasi Bencana",
+    "IoT & Sensor",
+    "Remote Sensing",
+    "Community Alert",
+    "Research & Development",
+    "Kemitraan",
+    "Tutorial GIS",
   ];
 
   const newsData = [
     {
       id: 1,
-      title: "Perkembangan AI Terbaru di Indonesia Mencapai Milestone Baru",
+      title:
+        "Sistem Prediksi Banjir AI Floonder Berhasil Prediksi Banjir Jakarta dengan Akurasi 98%",
       excerpt:
-        "Startup teknologi lokal berhasil mengembangkan sistem AI yang dapat memahami bahasa daerah...",
-      category: "Teknologi",
-      image:
-        "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=400",
+        "Platform Web GIS terdepan berhasil memberikan peringatan dini banjir 6 jam sebelum kejadian dengan tingkat akurasi tertinggi...",
+      category: "Teknologi GIS",
+      image: "https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=400",
       time: "2 jam yang lalu",
-      author: "Tech Reporter",
+      author: "GIS Analytics Team",
       featured: true,
     },
     {
       id: 2,
-      title: "Ekonomi Digital Indonesia Tumbuh 15% di Kuartal Ketiga",
+      title:
+        "BMKG dan Floonder Kolaborasi Tingkatkan Sistem Peringatan Dini Banjir Nasional",
       excerpt:
-        "Pertumbuhan sektor e-commerce dan fintech mendorong ekonomi digital nasional...",
-      category: "Bisnis",
-      image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400",
+        "Kerjasama strategis untuk mengintegrasikan data meteorologi real-time dengan teknologi Web GIS prediksi banjir...",
+      category: "Kemitraan",
+      image:
+        "https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?w=400",
       time: "4 jam yang lalu",
-      author: "Business Analyst",
+      author: "Partnership Analyst",
       featured: false,
     },
     {
       id: 3,
-      title: "Timnas Indonesia Lolos ke Babak 16 Besar Piala Asia",
+      title:
+        "Peta Interaktif Floonder Bantu Evakuasi 10.000 Warga Saat Banjir Bandung",
       excerpt:
-        "Kemenangan dramatis atas tim unggulan membuka jalan ke babak selanjutnya...",
-      category: "Olahraga",
-      image:
-        "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=400",
+        "Fitur real-time mapping dan route optimization membantu tim SAR dan warga dalam proses evakuasi darurat...",
+      category: "Mitigasi Bencana",
+      image: "https://images.unsplash.com/photo-1547683905-f686c993aae5?w=400",
       time: "6 jam yang lalu",
-      author: "Sports Writer",
+      author: "Disaster Management Reporter",
       featured: true,
     },
     {
       id: 4,
-      title: "Festival Film Indonesia 2024 Pecahkan Rekor Pengunjung",
+      title:
+        "Teknologi Sensor IoT Terintegrasi Floonder Perluas Cakupan Monitoring Curah Hujan",
       excerpt:
-        "Lebih dari 100 ribu pengunjung hadir dalam acara tahunan perfilman Indonesia...",
-      category: "Hiburan",
+        "Penambahan 500 sensor IoT di seluruh Indonesia meningkatkan akurasi data hidrologi untuk prediksi banjir yang lebih tepat...",
+      category: "IoT & Sensor",
       image:
-        "https://images.unsplash.com/photo-1489599474687-496e3dadf497?w=400",
+        "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400",
       time: "8 jam yang lalu",
-      author: "Entertainment Reporter",
+      author: "IoT Technology Writer",
       featured: false,
     },
     {
       id: 5,
-      title: "Inovasi Kesehatan Digital Raih Penghargaan Internasional",
+      title:
+        "Floonder Raih Penghargaan 'Best GIS Innovation' di Indonesia Geospatial Expo 2024",
       excerpt:
-        "Aplikasi telemedicine buatan anak bangsa diakui oleh WHO sebagai solusi terbaik...",
-      category: "Kesehatan",
-      image: "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400",
+        "Platform prediksi banjir berbasis Web GIS diakui sebagai inovasi terbaik dalam bidang geospasial dan mitigasi bencana...",
+      category: "Penghargaan",
+      image: "https://images.unsplash.com/photo-1556075798-4825dfaaf498?w=400",
       time: "1 hari yang lalu",
-      author: "Health Correspondent",
+      author: "Geospatial Correspondent",
       featured: true,
     },
   ];
@@ -133,20 +139,20 @@ const FloonderNews = () => {
   const recommendations = [
     {
       id: 6,
-      title: "Startup Unicorn Baru dari Indonesia",
-      category: "Bisnis",
+      title: "Tutorial: Membaca Peta Risiko Banjir di Platform Floonder",
+      category: "Tutorial GIS",
       time: "3 jam yang lalu",
     },
     {
       id: 7,
-      title: "Tips Cybersecurity untuk UMKM",
-      category: "Teknologi",
+      title: "Tips Menggunakan Data Satelit untuk Monitoring Banjir",
+      category: "Remote Sensing",
       time: "5 jam yang lalu",
     },
     {
       id: 8,
-      title: "Tren Fashion Sustainable 2024",
-      category: "Lifestyle",
+      title: "Panduan Lengkap Sistem Peringatan Dini Banjir Berbasis Komunitas",
+      category: "Community Alert",
       time: "7 jam yang lalu",
     },
   ];
@@ -154,21 +160,23 @@ const FloonderNews = () => {
   const bestOfWeek = [
     {
       id: 9,
-      title: "Revolusi Transportasi Hijau di Jakarta",
+      title: "Revolusi Prediksi Banjir: Dari Tradisional ke AI-Powered GIS",
       views: "125K",
-      category: "Lingkungan",
+      category: "Deep Dive GIS",
     },
     {
       id: 10,
-      title: "Kisah Sukses Petani Milenial",
+      title:
+        "Kisah Sukses Desa Tangguh Banjir dengan Bantuan Teknologi Floonder",
       views: "98K",
-      category: "Pertanian",
+      category: "Community Impact",
     },
     {
       id: 11,
-      title: "Breakthrough Riset Kanker Indonesia",
+      title:
+        "Breakthrough: Integrasi Big Data Cuaca dan Topografi untuk Prediksi Akurat",
       views: "87K",
-      category: "Kesehatan",
+      category: "Research & Development",
     },
   ];
 
@@ -413,7 +421,7 @@ const FloonderNews = () => {
       `}</style>
 
       <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-10 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-16  relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-3">

@@ -8,331 +8,452 @@ import Hero from "../components/Hero";
 
 const LandingPage = () => {
   const mapContainerRef = useRef(null);
-  const mapRef = useRef(null); // Retained for consistency, but not directly used for a map library here
+  const mapRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    const createIndonesiaFloodMap = () => {
+    const createIndonesiaParallaxMap = () => {
       const container = mapContainerRef.current;
       container.innerHTML = ""; // Clear existing content
 
-      // Create SVG element
-      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      svg.setAttribute("width", "100%");
-      svg.setAttribute("height", "100%");
-      svg.setAttribute("viewBox", "0 0 1000 600");
-      svg.style.opacity = "0.8"; // Increased opacity for better visibility
-      svg.style.backgroundColor = "transparent"; // Ensure transparency
+      // Create main container div
+      const mapDiv = document.createElement("div");
+      mapDiv.style.position = "relative";
+      mapDiv.style.width = "100%";
+      mapDiv.style.height = "100%";
+      mapDiv.style.display = "flex";
+      mapDiv.style.alignItems = "center";
+      mapDiv.style.justifyContent = "center";
+      mapDiv.style.minHeight = "400px";
 
-      // More detailed Indonesia archipelago paths (adjusted colors for a more natural, less vibrant look)
-      const indonesiaPaths = [
-        // Sumatra - Slightly desaturated blue-green
-        {
-          path: `M 80 120 Q 70 150 75 180 Q 80 220 85 250 Q 90 280 95 310 Q 100 340 90 370 Q 85 380 80 385 Q 75 390 70 385 Q 65 380 68 370 Q 65 340 60 310 Q 55 280 50 250 Q 45 220 50 180 Q 55 150 65 120 Q 70 110 80 120 Z`,
-          fill: "#c1e8f9", // Lighter, desaturated blue
-          stroke: "#4a90a4", // Darker, desaturated blue
-        },
-        // Java (main island) - Slightly desaturated green
-        {
-          path: `M 180 280 Q 220 275 260 280 Q 300 275 340 280 Q 380 275 420 280 Q 460 275 500 280 Q 540 285 580 290 Q 620 295 650 300 L 645 340 Q 605 345 565 340 Q 525 345 485 340 Q 445 345 405 340 Q 365 345 325 340 Q 285 345 245 340 Q 205 345 175 340 Z`,
-          fill: "#d0f0d0", // Light, natural green
-          stroke: "#5cb85c", // Deeper green
-        },
-        // Kalimantan - More earthy tone
-        {
-          path: `M 350 150 Q 390 145 430 150 Q 470 145 510 150 Q 550 155 590 160 Q 630 165 670 170 Q 700 175 720 185 Q 725 195 720 205 Q 715 220 710 240 Q 705 260 700 275 Q 680 270 660 265 Q 620 260 580 255 Q 540 250 500 245 Q 460 240 420 235 Q 380 230 340 225 Q 330 210 335 190 Q 340 170 350 150 Z`,
-          fill: "#f5f5dc", // Creamy beige
-          stroke: "#b8860b", // Goldenrod
-        },
-        // Sulawesi - Slightly muted purple
-        {
-          path: `M 600 200 Q 620 195 635 210 Q 650 225 655 245 Q 660 265 650 285 Q 645 305 635 320 Q 625 335 610 340 Q 595 345 580 340 Q 570 330 575 315 Q 580 300 585 285 Q 590 270 595 255 Q 600 240 605 225 Q 608 210 600 200 Z`,
-          fill: "#f1e7f5", // Light, muted purple
-          stroke: "#9462a6", // Deeper muted purple
-        },
-        // Papua - Muted blue-purple
-        {
-          path: `M 720 220 Q 760 215 800 220 Q 840 225 880 230 Q 920 235 950 240 Q 955 250 950 260 Q 945 280 940 300 Q 935 320 925 335 Q 915 350 900 360 Q 885 370 870 365 Q 855 360 845 350 Q 835 340 830 325 Q 825 310 820 295 Q 815 280 810 265 Q 805 250 800 235 Q 790 225 780 220 Q 750 215 720 220 Z`,
-          fill: "#e0d9eb", // Light, muted blue-purple
-          stroke: "#6a5acd", // Deeper muted blue-purple
-        },
-        // Bali & Nusa Tenggara - Muted reddish-brown
-        {
-          path: `M 650 300 Q 680 305 710 310 Q 740 315 770 320 Q 775 330 770 340 Q 765 350 755 355 Q 745 360 735 355 Q 725 350 720 340 Q 715 330 710 320 Q 690 315 670 310 Q 655 305 650 300 Z`,
-          fill: "#f0d8d8", // Light, muted red
-          stroke: "#b22222", // Firebrick
-        },
-      ];
+      // Create and load the Indonesia image
+      const indonesiaImg = document.createElement("img");
+      indonesiaImg.src = "/indonesiadot.png";
+      indonesiaImg.alt = "Indonesia Map";
+      indonesiaImg.style.maxWidth = "90%";
+      indonesiaImg.style.maxHeight = "80%";
+      indonesiaImg.style.objectFit = "contain";
+      indonesiaImg.style.opacity = "0.85";
+      indonesiaImg.style.filter = "brightness(1.1) contrast(1.05)";
+      indonesiaImg.style.transition = "transform 0.1s ease-out";
 
-      // Draw Indonesia islands
-      indonesiaPaths.forEach((island) => {
-        const path = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "path"
-        );
-        path.setAttribute("d", island.path);
-        path.setAttribute("fill", island.fill);
-        path.setAttribute("stroke", island.stroke);
-        path.setAttribute("stroke-width", "1.5");
-        path.setAttribute("stroke-opacity", "0.6");
-        svg.appendChild(path);
-      });
+      // Handle image load
+      indonesiaImg.onload = () => {
+        setImageLoaded(true);
 
-      // Generate random flood points across Indonesia
-      // NOTE: These coordinates are based on the simplified map's viewBox (1000x600).
-      // If you use a very different SVG, adjust these coordinates accordingly.
-      const floodPoints = [
-        // Java flood points (more concentrated in West Java/Bandung area)
-        { x: 200, y: 315, severity: "moderate", city: "Jakarta" },
-        { x: 250, y: 320, severity: "severe", city: "Bandung" },
-        { x: 300, y: 325, severity: "light", city: "Cirebon" },
-        { x: 400, y: 315, severity: "moderate", city: "Yogyakarta" },
-        { x: 480, y: 310, severity: "severe", city: "Surabaya" },
-        { x: 350, y: 318, severity: "light", city: "Solo" },
-        { x: 220, y: 310, severity: "moderate", city: "Bogor" },
-        { x: 270, y: 330, severity: "light", city: "Sukabumi" },
-
-        // Sumatra flood points
-        { x: 75, y: 180, severity: "moderate", city: "Medan" },
-        { x: 70, y: 240, severity: "light", city: "Padang" },
-        { x: 80, y: 320, severity: "severe", city: "Palembang" },
-        { x: 85, y: 360, severity: "moderate", city: "Lampung" },
-
-        // Kalimantan flood points
-        { x: 420, y: 200, severity: "light", city: "Pontianak" },
-        { x: 520, y: 180, severity: "moderate", city: "Balikpapan" },
-        { x: 600, y: 190, severity: "light", city: "Samarinda" },
-
-        // Sulawesi flood points
-        { x: 620, y: 240, severity: "moderate", city: "Makassar" },
-        { x: 610, y: 220, severity: "light", city: "Manado" },
-
-        // Eastern Indonesia
-        { x: 750, y: 280, severity: "light", city: "Jayapura" },
-        { x: 700, y: 325, severity: "moderate", city: "Kupang" },
-
-        // Additional random points for realistic distribution
-        {
-          x: 180 + Math.random() * 400,
-          y: 300 + Math.random() * 30,
-          severity: "light",
-          city: "",
-        },
-        {
-          x: 60 + Math.random() * 40,
-          y: 200 + Math.random() * 150,
-          severity: "moderate",
-          city: "",
-        },
-        {
-          x: 400 + Math.random() * 200,
-          y: 170 + Math.random() * 60,
-          severity: "light",
-          city: "",
-        },
-        {
-          x: 600 + Math.random() * 100,
-          y: 210 + Math.random() * 80,
-          severity: "moderate",
-          city: "",
-        },
-      ];
-
-      // Draw flood points with different severity indicators
-      floodPoints.forEach((point, index) => {
-        const severityColors = {
-          light: { fill: "#60a5fa", stroke: "#3b82f6", radius: 6 }, // Blue
-          moderate: { fill: "#f59e0b", stroke: "#d97706", radius: 8 }, // Amber
-          severe: { fill: "#ef4444", stroke: "#dc2626", radius: 12 }, // Red
+        // Create multiple parallax layers
+        const createParallaxLayer = (zIndex, speed, opacity) => {
+          const layer = document.createElement("div");
+          layer.style.position = "absolute";
+          layer.style.top = "0";
+          layer.style.left = "0";
+          layer.style.width = "100%";
+          layer.style.height = "100%";
+          layer.style.pointerEvents = "none";
+          layer.style.zIndex = zIndex;
+          layer.style.opacity = opacity;
+          layer.className = `parallax-layer-${speed}`;
+          return layer;
         };
 
-        const color = severityColors[point.severity];
+        // Create 3 parallax layers
+        const layer1 = createParallaxLayer(1, "slow", "0.4"); // Background elements
+        const layer2 = createParallaxLayer(2, "medium", "0.6"); // Mid elements
+        const layer3 = createParallaxLayer(3, "fast", "0.8"); // Foreground elements
 
-        // Outer glow circle
-        const glowCircle = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "circle"
-        );
-        glowCircle.setAttribute("cx", point.x);
-        glowCircle.setAttribute("cy", point.y);
-        glowCircle.setAttribute("r", color.radius * 2);
-        glowCircle.setAttribute("fill", color.fill);
-        glowCircle.setAttribute("fill-opacity", "0.2");
+        // Parallax elements for different layers
+        const parallaxElements = {
+          slow: [
+            // Large background circles - water bodies
+            {
+              x: 0.2,
+              y: 0.3,
+              size: 60,
+              color: "#0ea5e9",
+              type: "circle",
+              blur: 20,
+            },
+            {
+              x: 0.7,
+              y: 0.6,
+              size: 80,
+              color: "#06b6d4",
+              type: "circle",
+              blur: 25,
+            },
+            {
+              x: 0.5,
+              y: 0.8,
+              size: 70,
+              color: "#0284c7",
+              type: "circle",
+              blur: 22,
+            },
+            {
+              x: 0.1,
+              y: 0.7,
+              size: 50,
+              color: "#0369a1",
+              type: "circle",
+              blur: 18,
+            },
+            {
+              x: 0.85,
+              y: 0.2,
+              size: 65,
+              color: "#075985",
+              type: "circle",
+              blur: 20,
+            },
+          ],
+          medium: [
+            // Medium flood prediction zones
+            {
+              x: 0.15,
+              y: 0.4,
+              size: 35,
+              color: "#f59e0b",
+              type: "pulse",
+              blur: 8,
+            },
+            {
+              x: 0.35,
+              y: 0.7,
+              size: 40,
+              color: "#ef4444",
+              type: "pulse",
+              blur: 10,
+            },
+            {
+              x: 0.6,
+              y: 0.35,
+              size: 30,
+              color: "#10b981",
+              type: "pulse",
+              blur: 6,
+            },
+            {
+              x: 0.75,
+              y: 0.55,
+              size: 38,
+              color: "#f59e0b",
+              type: "pulse",
+              blur: 9,
+            },
+            {
+              x: 0.45,
+              y: 0.5,
+              size: 33,
+              color: "#06b6d4",
+              type: "pulse",
+              blur: 7,
+            },
+            {
+              x: 0.25,
+              y: 0.6,
+              size: 36,
+              color: "#8b5cf6",
+              type: "pulse",
+              blur: 8,
+            },
+          ],
+          fast: [
+            // Small active indicators - rainfall, sensors
+            {
+              x: 0.3,
+              y: 0.25,
+              size: 12,
+              color: "#3b82f6",
+              type: "dot",
+              blur: 2,
+            },
+            {
+              x: 0.55,
+              y: 0.4,
+              size: 15,
+              color: "#ef4444",
+              type: "dot",
+              blur: 3,
+            },
+            {
+              x: 0.8,
+              y: 0.3,
+              size: 10,
+              color: "#10b981",
+              type: "dot",
+              blur: 2,
+            },
+            {
+              x: 0.2,
+              y: 0.55,
+              size: 14,
+              color: "#f59e0b",
+              type: "dot",
+              blur: 3,
+            },
+            {
+              x: 0.65,
+              y: 0.65,
+              size: 13,
+              color: "#06b6d4",
+              type: "dot",
+              blur: 2,
+            },
+            {
+              x: 0.4,
+              y: 0.35,
+              size: 16,
+              color: "#8b5cf6",
+              type: "dot",
+              blur: 3,
+            },
+            {
+              x: 0.7,
+              y: 0.45,
+              size: 11,
+              color: "#ec4899",
+              type: "dot",
+              blur: 2,
+            },
+            {
+              x: 0.15,
+              y: 0.65,
+              size: 14,
+              color: "#84cc16",
+              type: "dot",
+              blur: 3,
+            },
+          ],
+        };
 
-        // Pulsing animation for glow
-        const glowAnimate = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "animate"
-        );
-        glowAnimate.setAttribute("attributeName", "r");
-        glowAnimate.setAttribute(
-          "values",
-          `${color.radius * 2};${color.radius * 3};${color.radius * 2}`
-        );
-        glowAnimate.setAttribute("dur", "4s");
-        glowAnimate.setAttribute("begin", `${index * 0.3}s`);
-        glowAnimate.setAttribute("repeatCount", "indefinite");
+        // Create elements for each layer
+        Object.keys(parallaxElements).forEach((layerType) => {
+          const layer =
+            layerType === "slow"
+              ? layer1
+              : layerType === "medium"
+              ? layer2
+              : layer3;
 
-        glowCircle.appendChild(glowAnimate);
-        svg.appendChild(glowCircle);
+          parallaxElements[layerType].forEach((element, index) => {
+            const el = document.createElement("div");
+            el.style.position = "absolute";
+            el.style.left = `${element.x * 100}%`;
+            el.style.top = `${element.y * 100}%`;
+            el.style.width = `${element.size}px`;
+            el.style.height = `${element.size}px`;
+            el.style.backgroundColor = element.color;
+            el.style.borderRadius = "50%";
+            el.style.transform = "translate(-50%, -50%)";
+            el.style.filter = `blur(${element.blur}px)`;
+            el.className = `parallax-${layerType}-${index}`;
 
-        // Main flood point circle
-        const circle = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "circle"
-        );
-        circle.setAttribute("cx", point.x);
-        circle.setAttribute("cy", point.y);
-        circle.setAttribute("r", color.radius);
-        circle.setAttribute("fill", color.fill);
-        circle.setAttribute("stroke", color.stroke);
-        circle.setAttribute("stroke-width", "2");
-        circle.setAttribute("fill-opacity", "0.8");
+            // Add different animations based on type
+            if (element.type === "pulse") {
+              el.style.animation = `pulse-parallax-${layerType}-${index} ${
+                3 + Math.random() * 2
+              }s ease-in-out infinite`;
+            } else if (element.type === "dot") {
+              el.style.animation = `dot-parallax-${layerType}-${index} ${
+                2 + Math.random() * 3
+              }s ease-in-out infinite`;
+            } else {
+              el.style.animation = `float-parallax-${layerType}-${index} ${
+                4 + Math.random() * 4
+              }s ease-in-out infinite`;
+            }
 
-        // Pulsing animation
-        const animate = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "animate"
-        );
-        animate.setAttribute("attributeName", "r");
-        animate.setAttribute(
-          "values",
-          `${color.radius};${color.radius + 3};${color.radius}`
-        );
-        animate.setAttribute("dur", "3s");
-        animate.setAttribute("begin", `${index * 0.2}s`);
-        animate.setAttribute("repeatCount", "indefinite");
+            el.style.animationDelay = `${Math.random() * 2}s`;
 
-        // Opacity animation
-        const animateOpacity = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "animate"
-        );
-        animateOpacity.setAttribute("attributeName", "fill-opacity");
-        animateOpacity.setAttribute("values", "0.8;0.4;0.8");
-        animateOpacity.setAttribute("dur", "3s");
-        animateOpacity.setAttribute("begin", `${index * 0.2}s`);
-        animateOpacity.setAttribute("repeatCount", "indefinite");
+            // Add CSS animations
+            const styleElement = document.createElement("style");
+            styleElement.textContent = `
+              @keyframes pulse-parallax-${layerType}-${index} {
+                0%, 100% { 
+                  transform: translate(-50%, -50%) scale(1);
+                  opacity: 0.6;
+                }
+                50% { 
+                  transform: translate(-50%, -50%) scale(1.3);
+                  opacity: 0.9;
+                }
+              }
+              @keyframes dot-parallax-${layerType}-${index} {
+                0%, 100% { 
+                  transform: translate(-50%, -50%) scale(1);
+                  opacity: 0.8;
+                }
+                25% { 
+                  transform: translate(-50%, -50%) scale(1.5);
+                  opacity: 1;
+                }
+                75% { 
+                  transform: translate(-50%, -50%) scale(0.8);
+                  opacity: 0.4;
+                }
+              }
+              @keyframes float-parallax-${layerType}-${index} {
+                0%, 100% { 
+                  transform: translate(-50%, -50%) translateY(0px);
+                  opacity: 0.4;
+                }
+                50% { 
+                  transform: translate(-50%, -50%) translateY(-10px);
+                  opacity: 0.7;
+                }
+              }
+            `;
+            document.head.appendChild(styleElement);
 
-        circle.appendChild(animate);
-        circle.appendChild(animateOpacity);
-        svg.appendChild(circle);
+            layer.appendChild(el);
+          });
+        });
 
-        // Add city labels for major cities
-        if (point.city && point.city.length > 0) {
-          const text = document.createElementNS(
-            "http://www.w3.org/2000/svg",
-            "text"
-          );
-          text.setAttribute("x", point.x + color.radius + 5);
-          text.setAttribute("y", point.y - color.radius - 5);
-          text.setAttribute("font-family", "Arial, sans-serif");
-          text.setAttribute("font-size", "11");
-          text.setAttribute("font-weight", "600"); // Slightly bolder
-          text.setAttribute("fill", "#1f2937"); // Darker text
-          text.setAttribute("fill-opacity", "0.9");
-          text.textContent = point.city;
-          svg.appendChild(text);
+        // Add floating data particles
+        for (let i = 0; i < 20; i++) {
+          const particle = document.createElement("div");
+          particle.style.position = "absolute";
+          particle.style.left = `${Math.random() * 100}%`;
+          particle.style.top = `${Math.random() * 100}%`;
+          particle.style.width = `${2 + Math.random() * 4}px`;
+          particle.style.height = `${2 + Math.random() * 4}px`;
+          particle.style.backgroundColor = "#3b82f6";
+          particle.style.borderRadius = "50%";
+          particle.style.opacity = "0.3";
+          particle.style.transform = "translate(-50%, -50%)";
+          particle.style.animation = `float-particle-${i} ${
+            5 + Math.random() * 5
+          }s linear infinite`;
+          particle.style.animationDelay = `${Math.random() * 3}s`;
+
+          const particleStyle = document.createElement("style");
+          particleStyle.textContent = `
+            @keyframes float-particle-${i} {
+              0% { 
+                transform: translate(-50%, -50%) translateY(0px) translateX(0px);
+                opacity: 0;
+              }
+              10% { 
+                opacity: 0.3;
+              }
+              90% { 
+                opacity: 0.3;
+              }
+              100% { 
+                transform: translate(-50%, -50%) translateY(-20px) translateX(${
+                  Math.random() * 40 - 20
+                }px);
+                opacity: 0;
+              }
+            }
+          `;
+          document.head.appendChild(particleStyle);
+          layer3.appendChild(particle);
         }
-      });
 
-      // Add animated water ripples effect (for general water movement)
-      for (let i = 0; i < 6; i++) {
-        const ripple = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "circle"
-        );
-        // Position ripples over potential water bodies/coasts
-        const x = 150 + Math.random() * 600;
-        const y = 200 + Math.random() * 200;
+        // Mouse parallax effect
+        let mouseX = 0;
+        let mouseY = 0;
 
-        ripple.setAttribute("cx", x);
-        ripple.setAttribute("cy", y);
-        ripple.setAttribute("r", "20");
-        ripple.setAttribute("fill", "none");
-        ripple.setAttribute("stroke", "#0891b2");
-        ripple.setAttribute("stroke-width", "1");
-        ripple.setAttribute("stroke-opacity", "0");
+        const handleMouseMove = (e) => {
+          const rect = container.getBoundingClientRect();
+          mouseX = (e.clientX - rect.left - rect.width / 2) / rect.width;
+          mouseY = (e.clientY - rect.top - rect.height / 2) / rect.height;
+        };
 
-        // Expanding ripple animation
-        const animateR = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "animate"
-        );
-        animateR.setAttribute("attributeName", "r");
-        animateR.setAttribute("values", "20;60;20");
-        animateR.setAttribute("dur", "6s");
-        animateR.setAttribute("begin", `${Math.random() * 3}s`);
-        animateR.setAttribute("repeatCount", "indefinite");
+        const updateParallax = () => {
+          // Update image transform
+          const imageTransform = `translate(${mouseX * 5}px, ${mouseY * 5}px)`;
+          indonesiaImg.style.transform = imageTransform;
 
-        const animateOpacity = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "animate"
-        );
-        animateOpacity.setAttribute("attributeName", "stroke-opacity");
-        animateOpacity.setAttribute("values", "0;0.4;0");
-        animateOpacity.setAttribute("dur", "6s");
-        animateOpacity.setAttribute("begin", `${Math.random() * 3}s`);
-        animateOpacity.setAttribute("repeatCount", "indefinite");
+          // Update layer transforms with different speeds
+          layer1.style.transform = `translate(${mouseX * 10}px, ${
+            mouseY * 10
+          }px)`;
+          layer2.style.transform = `translate(${mouseX * 20}px, ${
+            mouseY * 20
+          }px)`;
+          layer3.style.transform = `translate(${mouseX * 30}px, ${
+            mouseY * 30
+          }px)`;
 
-        ripple.appendChild(animateR);
-        ripple.appendChild(animateOpacity);
-        svg.appendChild(ripple);
-      }
+          requestAnimationFrame(updateParallax);
+        };
 
-      // Add animated rain droplets for "curah hujan" illustration
-      for (let i = 0; i < 15; i++) {
-        const rainDroplet = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "circle"
-        );
-        const x = 50 + Math.random() * 900; // Across the whole map
-        const y = 50 + Math.random() * 500;
-        const size = Math.random() * 2 + 1; // Small droplets
+        // Scroll parallax effect
+        const handleScroll = () => {
+          const scrollY = window.scrollY;
+          const scrollFactor = scrollY * 0.5;
 
-        rainDroplet.setAttribute("cx", x);
-        rainDroplet.setAttribute("cy", y);
-        rainDroplet.setAttribute("r", size);
-        rainDroplet.setAttribute("fill", "#0284c7"); // Blue for rain
-        rainDroplet.setAttribute("fill-opacity", "0.7");
+          layer1.style.transform = `translate(${mouseX * 10}px, ${
+            mouseY * 10 + scrollFactor * 0.2
+          }px)`;
+          layer2.style.transform = `translate(${mouseX * 20}px, ${
+            mouseY * 20 + scrollFactor * 0.4
+          }px)`;
+          layer3.style.transform = `translate(${mouseX * 30}px, ${
+            mouseY * 30 + scrollFactor * 0.6
+          }px)`;
 
-        // Animate a short "splash" or "fall" effect
-        const splashAnimateR = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "animate"
-        );
-        splashAnimateR.setAttribute("attributeName", "r");
-        splashAnimateR.setAttribute("values", `${size};${size * 3};0`);
-        splashAnimateR.setAttribute("dur", "1.5s");
-        splashAnimateR.setAttribute("begin", `${Math.random() * 3}s`);
-        splashAnimateR.setAttribute("repeatCount", "indefinite");
+          indonesiaImg.style.transform = `translate(${mouseX * 5}px, ${
+            mouseY * 5 + scrollFactor * 0.1
+          }px)`;
+        };
 
-        const splashAnimateOpacity = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "animate"
-        );
-        splashAnimateOpacity.setAttribute("attributeName", "fill-opacity");
-        splashAnimateOpacity.setAttribute("values", "0.7;0.2;0");
-        splashAnimateOpacity.setAttribute("dur", "1.5s");
-        splashAnimateOpacity.setAttribute("begin", `${Math.random() * 3}s`);
-        splashAnimateOpacity.setAttribute("repeatCount", "indefinite");
+        // Add event listeners
+        window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("scroll", handleScroll);
 
-        rainDroplet.appendChild(splashAnimateR);
-        rainDroplet.appendChild(splashAnimateOpacity);
-        svg.appendChild(rainDroplet);
-      }
+        updateParallax();
 
-      container.appendChild(svg);
-      setMapLoaded(true);
+        // Add layers to map
+        mapDiv.appendChild(layer1);
+        mapDiv.appendChild(layer2);
+        mapDiv.appendChild(layer3);
+
+        // Cleanup function for event listeners
+        mapDiv._cleanup = () => {
+          window.removeEventListener("mousemove", handleMouseMove);
+          window.removeEventListener("scroll", handleScroll);
+        };
+
+        setMapLoaded(true);
+      };
+
+      // Handle image load error
+      indonesiaImg.onerror = () => {
+        console.warn("Failed to load /indonesiadot.png, using fallback");
+        const fallbackDiv = document.createElement("div");
+        fallbackDiv.style.display = "flex";
+        fallbackDiv.style.alignItems = "center";
+        fallbackDiv.style.justifyContent = "center";
+        fallbackDiv.style.width = "100%";
+        fallbackDiv.style.height = "100%";
+        fallbackDiv.style.color = "#6b7280";
+        fallbackDiv.style.fontSize = "18px";
+        fallbackDiv.style.fontWeight = "500";
+        fallbackDiv.textContent = "Peta Indonesia - Prediksi Banjir";
+        mapDiv.appendChild(fallbackDiv);
+        setMapLoaded(true);
+      };
+
+      mapDiv.appendChild(indonesiaImg);
+      container.appendChild(mapDiv);
     };
 
-    createIndonesiaFloodMap();
+    createIndonesiaParallaxMap();
 
     // Cleanup function
     return () => {
       if (mapContainerRef.current) {
+        // Clean up event listeners
+        const mapDiv = mapContainerRef.current.querySelector("div");
+        if (mapDiv && mapDiv._cleanup) {
+          mapDiv._cleanup();
+        }
         mapContainerRef.current.innerHTML = "";
       }
     };
@@ -343,7 +464,7 @@ const LandingPage = () => {
     const canvasRef = useRef(null);
 
     useEffect(() => {
-      if (mapLoaded) return; // Only run if the SVG map isn't loaded
+      if (mapLoaded) return;
 
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -352,20 +473,14 @@ const LandingPage = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
 
-      // Indonesia archipelago points for fallback (adjust as needed for better representation)
       const indonesiaRegions = [
-        // Java region
         { x: 0.2, y: 0.6, color: "#16a34a", label: "Java" },
         { x: 0.25, y: 0.65, color: "#dc2626", label: "Bandung" },
         { x: 0.35, y: 0.62, color: "#f59e0b", label: "Central Java" },
         { x: 0.45, y: 0.58, color: "#ef4444", label: "East Java" },
-
-        // Sumatra region
         { x: 0.08, y: 0.4, color: "#3b82f6", label: "North Sumatra" },
         { x: 0.1, y: 0.55, color: "#f59e0b", label: "Central Sumatra" },
         { x: 0.12, y: 0.7, color: "#16a34a", label: "South Sumatra" },
-
-        // Other islands
         { x: 0.6, y: 0.45, color: "#ec4899", label: "Sulawesi" },
         { x: 0.85, y: 0.5, color: "#9333ea", label: "Papua" },
         { x: 0.7, y: 0.65, color: "#e53e3e", label: "Nusa Tenggara" },
@@ -385,37 +500,31 @@ const LandingPage = () => {
         driftY: 0,
       }));
 
-      let time = 0;
       let animationFrameId;
 
       const animate = () => {
-        time += 0.01;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        particles.forEach((particle, i) => {
+        particles.forEach((particle) => {
           particle.pulsePhase += 0.03;
           particle.driftX += (Math.random() - 0.5) * 0.1;
           particle.driftY += (Math.random() - 0.5) * 0.1;
 
-          // Limit drift
           particle.driftX = Math.max(-10, Math.min(10, particle.driftX));
           particle.driftY = Math.max(-10, Math.min(10, particle.driftY));
 
-          // Update position with drift
           particle.x = particle.originalX + particle.driftX;
           particle.y = particle.originalY + particle.driftY;
 
           const pulseFactor = 0.6 + 0.4 * Math.sin(particle.pulsePhase);
           const currentSize = particle.size * pulseFactor;
 
-          // Main particle
           ctx.beginPath();
           ctx.fillStyle = particle.color;
           ctx.globalAlpha = particle.opacity;
           ctx.arc(particle.x, particle.y, currentSize, 0, Math.PI * 2);
           ctx.fill();
 
-          // Glow effect
           const gradient = ctx.createRadialGradient(
             particle.x,
             particle.y,
@@ -459,7 +568,7 @@ const LandingPage = () => {
       };
     }, [mapLoaded]);
 
-    if (mapLoaded) return null; // Don't render if the SVG map loaded
+    if (mapLoaded) return null;
 
     return (
       <canvas
@@ -471,44 +580,38 @@ const LandingPage = () => {
 
   return (
     <div className="bg-white min-h-screen relative">
-      {/* Floonder Map Background */}
+      {/* Floonder Parallax Map Background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div
           ref={mapContainerRef}
           className="w-full h-full flex items-center justify-center"
           style={{
-            // Apply filters to give the map a more 'GIS' or 'satellite' feel
             filter: "hue-rotate(15deg) saturate(0.9) brightness(1.1)",
           }}
         />
-        {/* The CanvasFallback will render only if the SVG map fails to load */}
         <CanvasFallback />
       </div>
 
-      {/* Enhanced Gradient Overlays - Floonder Theme (GIS, Water, Rainfall) */}
+      {/* Enhanced Gradient Overlays - Floonder Theme */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        {/* Main gradient with blue water theme - wider and more subtle */}
         <div
           className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[1200px] h-[700px]
           bg-gradient-to-b from-blue-50 via-cyan-50/60 via-emerald-50/40 to-transparent
           rounded-full blur-3xl opacity-50"
         />
 
-        {/* Rainfall / green-blue focus gradient (e.g., over Java/Sumatra) */}
         <div
           className="absolute top-1/2 left-1/4 w-[900px] h-[500px]
           bg-gradient-to-r from-emerald-50/60 via-green-50/40 via-blue-50/30 to-transparent
           rounded-full blur-2xl opacity-60"
         />
 
-        {/* Deeper water/prediction theme overlay */}
         <div
           className="absolute bottom-0 right-1/3 w-[700px] h-[500px]
           bg-gradient-to-t from-cyan-100/70 via-blue-100/50 via-indigo-100/40 to-transparent
           rounded-full blur-2xl opacity-40"
         />
 
-        {/* Dynamic water reflection / data flow effect */}
         <div
           className="absolute inset-0"
           style={{
@@ -522,7 +625,7 @@ const LandingPage = () => {
         />
       </div>
 
-      {/* Floonder Data Grid Pattern (more subtle) */}
+      {/* Floonder Data Grid Pattern */}
       <div
         className="fixed inset-0 pointer-events-none z-0 opacity-[0.015]"
         style={{
@@ -530,7 +633,7 @@ const LandingPage = () => {
             linear-gradient(rgba(59,130,246,0.1) 1px, transparent 1px),
             linear-gradient(90deg, rgba(16,185,129,0.08) 1px, transparent 1px)
           `,
-          backgroundSize: "100px 100px", // Larger grid cells
+          backgroundSize: "100px 100px",
         }}
       />
 
@@ -546,7 +649,7 @@ const LandingPage = () => {
         <Footer />
       </div>
 
-      {/* Enhanced Floating Elements - Data Points / Prediction Indicators */}
+      {/* Enhanced Floating Elements */}
       <div className="fixed top-16 right-12 w-3 h-3 bg-blue-500 rounded-full animate-pulse opacity-70 pointer-events-none z-5" />
       <div
         className="fixed top-1/4 left-8 w-2 h-2 bg-cyan-600 rounded-full animate-pulse opacity-60 pointer-events-none z-5"
@@ -569,34 +672,6 @@ const LandingPage = () => {
       {!mapLoaded && (
         <div className="fixed top-4 right-4 text-xs text-blue-700 opacity-70 pointer-events-none z-10 bg-white/90 px-2 py-1 rounded-lg shadow-sm">
           Loading Floonder Map...
-        </div>
-      )}
-
-      {/* Map legend */}
-      {mapLoaded && (
-        <div className="fixed bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg p-3 shadow-xl pointer-events-none z-10 text-xs">
-          <div className="font-bold text-gray-800 mb-2">
-            Peta Prediksi Banjir
-          </div>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-blue-400"></div>
-              <span className="text-gray-700">Ringan</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-              <span className="text-gray-700">Sedang</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-500"></div>
-              <span className="text-gray-700">Parah</span>
-            </div>
-            <hr className="my-2 border-gray-200" />
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-blue-600 opacity-70"></div>
-              <span className="text-gray-700">Curah Hujan</span>
-            </div>
-          </div>
         </div>
       )}
     </div>
