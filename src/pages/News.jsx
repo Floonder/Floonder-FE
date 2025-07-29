@@ -69,6 +69,7 @@ const FloonderNews = () => {
     "Research & Development",
     "Kemitraan",
     "Tutorial GIS",
+    "Penghargaan",
   ];
 
   const newsData = [
