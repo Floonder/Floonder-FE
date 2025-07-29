@@ -1,5 +1,3 @@
-// authapi.js - Authentication API functions
-
 /**
  * Login user with email and password
  * @param {string} email - User's email
