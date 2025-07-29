@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import weatherService from "../services/weatherapi";
+
 const Weather = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedCity, setSelectedCity] = useState("Bandung");
@@ -23,14 +25,14 @@ const Weather = () => {
   const [error, setError] = useState(null);
   const [mounted, setMounted] = useState(false);
 
-  const API_KEY = "32e112f820f260e8fe88dffcd9ac61a6";
-
+  // Initialize component
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     setMounted(true);
     return () => clearInterval(timer);
   }, []);
 
+  // Fetch weather data when city changes
   useEffect(() => {
     fetchWeatherData();
   }, [selectedCity]);
@@ -40,27 +42,10 @@ const Weather = () => {
     setError(null);
 
     try {
-      // Current weather API
-      const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${selectedCity}&units=metric&lang=id&appid=${API_KEY}`;
-      const currentResponse = await fetch(currentWeatherUrl);
-
-      if (!currentResponse.ok) {
-        throw new Error("Gagal mengambil data cuaca");
-      }
-
-      const currentData = await currentResponse.json();
-
-      // 5-day forecast API
-      const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${selectedCity}&units=metric&lang=id&appid=${API_KEY}`;
-      const forecastResponse = await fetch(forecastUrl);
-
-      if (!forecastResponse.ok) {
-        throw new Error("Gagal mengambil data ramalan");
-      }
-
-      const forecast = await forecastResponse.json();
-
-      setWeatherData(currentData);
+      const { current, forecast } = await weatherService.getWeatherData(
+        selectedCity
+      );
+      setWeatherData(current);
       setForecastData(forecast);
     } catch (err) {
       setError(err.message);
@@ -69,97 +54,41 @@ const Weather = () => {
     }
   };
 
-  const cities = [
-    "Jakarta",
-    "Bandung",
-    "Surabaya",
-    "Medan",
-    "Semarang",
-    "Makassar",
-    "Palembang",
-    "Yogyakarta",
-  ];
-
   const getWeatherIcon = (condition) => {
+    const iconType = weatherService.getWeatherIconType(condition);
+
     const iconMap = {
-      "01d": <Sun className="w-8 h-8 text-yellow-500" />,
-      "01n": <Sun className="w-8 h-8 text-yellow-400" />,
-      "02d": <Cloud className="w-8 h-8 text-gray-500" />,
-      "02n": <Cloud className="w-8 h-8 text-gray-400" />,
-      "03d": <Cloud className="w-8 h-8 text-gray-500" />,
-      "03n": <Cloud className="w-8 h-8 text-gray-400" />,
-      "04d": <Cloud className="w-8 h-8 text-gray-600" />,
-      "04n": <Cloud className="w-8 h-8 text-gray-500" />,
-      "09d": <CloudRain className="w-8 h-8 text-blue-500" />,
-      "09n": <CloudRain className="w-8 h-8 text-blue-400" />,
-      "10d": <CloudRain className="w-8 h-8 text-blue-500" />,
-      "10n": <CloudRain className="w-8 h-8 text-blue-400" />,
-      "11d": <Zap className="w-8 h-8 text-purple-500" />,
-      "11n": <Zap className="w-8 h-8 text-purple-400" />,
-      "13d": <CloudSnow className="w-8 h-8 text-blue-300" />,
-      "13n": <CloudSnow className="w-8 h-8 text-blue-200" />,
-      "50d": <Cloud className="w-8 h-8 text-gray-400" />,
-      "50n": <Cloud className="w-8 h-8 text-gray-300" />,
+      "sun-day": <Sun className="w-8 h-8 text-yellow-500" />,
+      "sun-night": <Sun className="w-8 h-8 text-yellow-400" />,
+      "cloud-day": <Cloud className="w-8 h-8 text-gray-500" />,
+      "cloud-night": <Cloud className="w-8 h-8 text-gray-400" />,
+      cloud: <Cloud className="w-8 h-8 text-gray-500" />,
+      "cloud-heavy": <Cloud className="w-8 h-8 text-gray-600" />,
+      rain: <CloudRain className="w-8 h-8 text-blue-500" />,
+      thunder: <Zap className="w-8 h-8 text-purple-500" />,
+      snow: <CloudSnow className="w-8 h-8 text-blue-300" />,
+      mist: <Cloud className="w-8 h-8 text-gray-400" />,
     };
 
-    return iconMap[condition] || <Cloud className="w-8 h-8 text-gray-500" />;
+    return iconMap[iconType] || <Cloud className="w-8 h-8 text-gray-500" />;
   };
 
-  const formatHourlyForecast = () => {
-    if (!forecastData) return [];
+  const cities = weatherService.getCities();
+  const hourlyForecast = weatherService.formatHourlyForecast(forecastData);
+  const dailyForecast = weatherService.formatDailyForecast(forecastData);
 
-    return forecastData.list.slice(0, 8).map((item) => ({
-      time: new Date(item.dt * 1000).toLocaleTimeString("id-ID", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      temp: Math.round(item.main.temp),
-      condition: item.weather[0].icon,
-      humidity: item.main.humidity,
-    }));
-  };
-
-  const formatDailyForecast = () => {
-    if (!forecastData) return [];
-
-    const dailyData = [];
-    const processedDates = new Set();
-
-    forecastData.list.forEach((item) => {
-      const date = new Date(item.dt * 1000);
-      const dateString = date.toDateString();
-
-      if (!processedDates.has(dateString) && dailyData.length < 7) {
-        processedDates.add(dateString);
-
-        const dayName = date.toLocaleDateString("id-ID", { weekday: "long" });
-        const dateFormatted = date.toLocaleDateString("id-ID", {
-          day: "numeric",
-          month: "long",
-        });
-
-        const dayForecasts = forecastData.list.filter(
-          (f) => new Date(f.dt * 1000).toDateString() === dateString
-        );
-
-        const temps = dayForecasts.map((f) => f.main.temp);
-        const humidities = dayForecasts.map((f) => f.main.humidity);
-
-        dailyData.push({
-          day: dailyData.length === 0 ? "Hari Ini" : dayName,
-          date: dateFormatted,
-          temp: Math.round(Math.max(...temps)),
-          tempMin: Math.round(Math.min(...temps)),
-          condition: item.weather[0].icon,
-          humidity: Math.round(
-            humidities.reduce((a, b) => a + b, 0) / humidities.length
-          ),
-        });
-      }
-    });
-
-    return dailyData;
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center">
+        <div className="text-center bg-white/80 backdrop-blur-lg p-8 rounded-xl border border-white/40 shadow-lg animate-pulse">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <div className="text-gray-600 text-lg font-semibold">
+            Memuat data cuaca...
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
@@ -177,9 +106,6 @@ const Weather = () => {
       </div>
     );
   }
-
-  const hourlyForecast = formatHourlyForecast();
-  const dailyForecast = formatDailyForecast();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 relative overflow-hidden">
@@ -424,7 +350,7 @@ const Weather = () => {
       `}</style>
 
       <div className="relative z-10 mt-15 px-4">
-        {/* Header with animations */}
+        {/* Header */}
         <Navbar />
         <div
           className={`transition-all duration-1000 ${
@@ -448,7 +374,7 @@ const Weather = () => {
               </div>
             </div>
 
-            {/* City Selector with animation */}
+            {/* City Selector */}
             <select
               value={selectedCity}
               onChange={(e) => setSelectedCity(e.target.value)}
@@ -466,7 +392,7 @@ const Weather = () => {
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Weather Card */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Current Weather with enhanced animations */}
+            {/* Current Weather */}
             <div className="bg-white/80 backdrop-blur-lg rounded-3xl p-8 border border-white/40 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-[1.02] transform animate-slide-in-left">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 space-y-4 md:space-y-0">
                 <div className="animate-fade-in animate-delay-100">
@@ -494,7 +420,7 @@ const Weather = () => {
                 </div>
               </div>
 
-              {/* Weather Stats Grid with staggered animations */}
+              {/* Weather Stats Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
                   {
@@ -558,7 +484,7 @@ const Weather = () => {
               </div>
             </div>
 
-            {/* Hourly Forecast with enhanced animations */}
+            {/* Hourly Forecast */}
             <div className="bg-white/80 backdrop-blur-lg rounded-3xl p-6 border border-white/40 shadow-2xl hover:shadow-3xl transition-all duration-500 animate-slide-in-left animate-delay-200">
               <div className="flex items-center mb-6">
                 <Clock className="w-6 h-6 text-blue-500 mr-3 animate-pulse" />
@@ -591,7 +517,7 @@ const Weather = () => {
             </div>
           </div>
 
-          {/* Right Sidebar with animations */}
+          {/* Right Sidebar */}
           <div className="space-y-8">
             {/* Indonesia Map Placeholder */}
             <div className="bg-white/80 backdrop-blur-lg rounded-3xl p-6 border border-white/40 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-[1.02] transform animate-slide-in-right">
