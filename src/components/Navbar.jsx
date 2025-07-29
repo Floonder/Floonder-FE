@@ -38,6 +38,7 @@ const Navbar = () => {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "unset";
+      setDropdownOpen(null);
     }
   };
 
@@ -55,11 +56,6 @@ const Navbar = () => {
       name: "Peta Banjir",
       path: "/maps",
       icon: Map,
-      // submenu: [
-      //   { name: "Peta Real-time", path: "/maps/realtime" },
-      //   { name: "Analisis Risiko", path: "/maps/risk-analysis" },
-      //   { name: "Riwayat Banjir", path: "/maps/history" },
-      // ],
     },
     {
       name: "Status Cuaca",
@@ -67,7 +63,7 @@ const Navbar = () => {
       icon: AlertTriangle,
     },
     {
-      name: "Anaitik",
+      name: "Analitik",
       path: "/analytics",
       icon: Activity,
     },
@@ -111,7 +107,7 @@ const Navbar = () => {
                   onder
                 </span>
               </span>
-              <span className="text-xs text-slate-500 -mt-1">
+              <span className="text-xs text-slate-500 -mt-1 hidden sm:block">
                 GIS Flood System
               </span>
             </div>
@@ -177,121 +173,162 @@ const Navbar = () => {
           {/* Mobile Menu Button */}
           <div className="lg:hidden">
             <button
-              className="p-2 text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              className="p-2 text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors relative z-50"
               onClick={toggleMenu}
             >
-              <Menu className="h-6 w-6" />
+              <div className="relative w-6 h-6">
+                <Menu
+                  className={`h-6 w-6 absolute top-0 left-0 transition-all duration-300 ${
+                    isMenuOpen ? "opacity-0 rotate-180" : "opacity-100 rotate-0"
+                  }`}
+                />
+                <X
+                  className={`h-6 w-6 absolute top-0 left-0 transition-all duration-300 ${
+                    isMenuOpen
+                      ? "opacity-100 rotate-0"
+                      : "opacity-0 -rotate-180"
+                  }`}
+                />
+              </div>
             </button>
           </div>
         </div>
+      </nav>
 
-        {/* Mobile Menu */}
+      {/* Mobile Menu Overlay */}
+      <div
+        className={`lg:hidden fixed inset-0 z-50 transition-all duration-300 ${
+          isMenuOpen ? "visible opacity-100" : "invisible opacity-0"
+        }`}
+      >
+        {/* Backdrop */}
         <div
-          className={`lg:hidden fixed inset-0 z-50 transform transition-transform duration-300 ${
+          className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-all duration-300 ${
+            isMenuOpen ? "opacity-100" : "opacity-0"
+          }`}
+          onClick={toggleMenu}
+        />
+
+        {/* Mobile Menu Panel */}
+        <div
+          className={`absolute top-0 right-0 h-full w-full max-w-sm bg-white shadow-2xl transform transition-transform duration-300 ease-out ${
             isMenuOpen ? "translate-x-0" : "translate-x-full"
           }`}
         >
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={toggleMenu}
-          />
-
-          {/* Menu Panel */}
-          <div className="absolute right-0 top-0 h-full w-80 max-w-full bg-white shadow-xl">
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-slate-200">
-              <a
-                href="/"
-                className="flex items-center text-slate-800 font-bold"
-                onClick={toggleMenu}
-              >
-                <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-green-50 p-2 rounded-xl mr-3">
-                  <Map className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <span className="text-lg">Floonder</span>
-                  <div className="text-xs text-slate-500">GIS Flood System</div>
-                </div>
-              </a>
-              <button
-                onClick={toggleMenu}
-                className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-
-            {/* Menu Items */}
-            <div className="flex-1 overflow-y-auto p-4">
-              <div className="space-y-2">
-                {menuItems.map((item) => (
-                  <div key={item.name}>
-                    {item.submenu ? (
-                      <div>
-                        <button
-                          onClick={() => handleDropdown(item.name)}
-                          className="flex items-center justify-between w-full p-3 text-left text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
-                        >
-                          <div className="flex items-center">
-                            <item.icon className="w-5 h-5 mr-3" />
-                            {item.name}
-                          </div>
-                          <ChevronDown
-                            className={`w-4 h-4 transition-transform ${
-                              dropdownOpen === item.name ? "rotate-180" : ""
-                            }`}
-                          />
-                        </button>
-                        {dropdownOpen === item.name && (
-                          <div className="ml-6 mt-2 space-y-1">
-                            {item.submenu.map((subItem) => (
-                              <a
-                                key={subItem.name}
-                                href={subItem.path}
-                                className="block p-2 pl-4 text-sm text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                onClick={toggleMenu}
-                              >
-                                {subItem.name}
-                              </a>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <a
-                        href={item.path}
-                        className="flex items-center p-3 text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
-                        onClick={toggleMenu}
-                      >
-                        <item.icon className="w-5 h-5 mr-3" />
-                        {item.name}
-                      </a>
-                    )}
-                  </div>
-                ))}
+          {/* Mobile Header */}
+          <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-cyan-50">
+            <a
+              href="/"
+              className="flex items-center text-slate-800 font-bold"
+              onClick={toggleMenu}
+            >
+              <img
+                src="Artboard 3.png"
+                alt="logo"
+                className="h-8 sm:h-10 mr-2"
+              />
+              <div>
+                <span className="text-lg font-bold">Floonder</span>
+                <div className="text-xs text-slate-500">GIS Flood System</div>
               </div>
-            </div>
+            </a>
+            <button
+              onClick={toggleMenu}
+              className="p-2 text-slate-500 hover:text-slate-700 hover:bg-white/50 rounded-lg transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
 
-            {/* Mobile Auth Section */}
-            <div className="p-4 border-t border-slate-200 space-y-3">
-              <a
-                href="/auth"
-                className="flex items-center justify-center w-full p-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 font-semibold rounded-lg transition-all duration-300"
-                onClick={toggleMenu}
-              >
-                <User className="w-5 h-5 mr-2" />
-                Masuk
-              </a>
-            </div>
-
-            {/* Footer */}
-            <div className="p-4 text-center text-xs text-slate-500 border-t border-slate-200">
-              © 2025 Floonder. Semua hak dilindungi.
+          {/* Mobile Menu Items */}
+          <div className="flex-1 overflow-y-auto py-4">
+            <div className="px-4 space-y-1">
+              {menuItems.map((item, index) => (
+                <div
+                  key={item.name}
+                  className={`transform transition-all duration-300 ${
+                    isMenuOpen
+                      ? "translate-x-0 opacity-100"
+                      : "translate-x-8 opacity-0"
+                  }`}
+                  style={{
+                    transitionDelay: isMenuOpen ? `${index * 50}ms` : "0ms",
+                  }}
+                >
+                  {item.submenu ? (
+                    <div>
+                      <button
+                        onClick={() => handleDropdown(item.name)}
+                        className="flex items-center justify-between w-full p-3 text-left text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200 group"
+                      >
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg mr-3 group-hover:from-blue-100 group-hover:to-cyan-100 transition-colors">
+                            <item.icon className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <span className="font-medium">{item.name}</span>
+                        </div>
+                        <ChevronDown
+                          className={`w-4 h-4 transition-transform ${
+                            dropdownOpen === item.name ? "rotate-180" : ""
+                          }`}
+                        />
+                      </button>
+                      <div
+                        className={`overflow-hidden transition-all duration-300 ${
+                          dropdownOpen === item.name
+                            ? "max-h-96 opacity-100"
+                            : "max-h-0 opacity-0"
+                        }`}
+                      >
+                        <div className="ml-12 mt-2 space-y-1">
+                          {item.submenu.map((subItem) => (
+                            <a
+                              key={subItem.name}
+                              href={subItem.path}
+                              className="block p-2 pl-4 text-sm text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              onClick={toggleMenu}
+                            >
+                              {subItem.name}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <a
+                      href={item.path}
+                      className="flex items-center p-3 text-slate-700 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all duration-200 group"
+                      onClick={toggleMenu}
+                    >
+                      <div className="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg mr-3 group-hover:from-blue-100 group-hover:to-cyan-100 transition-colors">
+                        <item.icon className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <span className="font-medium">{item.name}</span>
+                    </a>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
+
+          {/* Mobile Auth Section */}
+          <div className="p-4 border-t border-slate-200 bg-slate-50">
+            <a
+              href="/auth"
+              className="flex items-center justify-center w-full p-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:from-blue-600 hover:to-cyan-600 font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+              onClick={toggleMenu}
+            >
+              <User className="w-5 h-5 mr-2" />
+              Masuk ke Akun
+            </a>
+          </div>
+
+          {/* Mobile Footer */}
+          <div className="p-4 text-center text-xs text-slate-500 bg-slate-50">
+            © 2025 Floonder. Semua hak dilindungi.
+          </div>
         </div>
-      </nav>
+      </div>
     </>
   );
 };
