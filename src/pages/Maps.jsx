@@ -11,8 +11,11 @@ import {
   XIcon,
 } from "../components/icon/Icon";
 import {
-  ChevronUp as ChevronUpIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
   ChevronDown as ChevronDownIcon,
+  ChevronUp as ChevronUpIcon,
+  FilterIcon,
   MapPin as MapPinIcon,
   Droplet as DropletIcon,
   Activity as ActivityIcon,
@@ -35,7 +38,7 @@ function Maps() {
   const [showProperties, setShowProperties] = useState(false);
   const [selectedFeature, setSelectedFeature] = useState(null);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
-  const [isPanelExpanded, setIsPanelExpanded] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [mapStyleMenuOpen, setMapStyleMenuOpen] = useState(false);
 
   // New states for filters
@@ -54,9 +57,8 @@ function Maps() {
     "Kota Bandung",
     "Bandung",
     "Cimahi",
-    "Sumedang",
-    "Garut",
     "Bandung Barat",
+    "Garut",
   ];
 
   // Map style state and options
@@ -79,8 +81,8 @@ function Maps() {
       container: mapContainer.current,
       style: mapStyles[mapStyle],
       center: [107.6098, -6.9149],
-      zoom: 15.5,
-      pitch: is3DMode ? 60 : 0,
+      zoom: 100,
+      pitch: is3DMode ? 80 : 0,
     });
 
     map.current.on("load", () => {
@@ -1039,7 +1041,7 @@ function Maps() {
     return (
       <div className="mb-4 space-y-4">
         {/* Administrative Boundaries Filter */}
-        <div className="bg-white p-3 rounded shadow-md">
+        <div className="bg-transparent p-3 rounded-xl shadow-md">
           <h3 className="font-bold text-gray-800 mb-2">
             Administrative Area Filters
           </h3>
@@ -1088,20 +1090,20 @@ function Maps() {
           <div className="mt-3 flex space-x-2">
             <button
               onClick={() => handleFilterSubmit("administrative")}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
               Apply Filter
             </button>
             <button
               onClick={() => clearFilters("administrative")}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="inline-flex items-center px-4 py-2 border border-green-300 text-sm font-medium rounded-md shadow-sm text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
               Clear
             </button>
           </div>
         </div>
         {/* Prediction Filter */}
-        <div className="bg-white p-3 rounded shadow-md">
+        <div className="bg-transparent p-3 rounded-xl shadow-md">
           <h3 className="font-bold text-gray-800 mb-2">Prediction Filters</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             <div>
@@ -1151,10 +1153,14 @@ function Maps() {
               <select
                 value="2025"
                 disabled // mencegah user mengubah
-                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md bg-gray-100 cursor-not-allowed"
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-white/30 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-transparent backdrop-blur-md cursor-not-allowed text-black placeholder-black/70"
               >
                 {yearOptions.map((year) => (
-                  <option key={year} value={year}>
+                  <option
+                    key={year}
+                    value={year}
+                    className="bg-black/80 text-white"
+                  >
                     {year}
                   </option>
                 ))}
@@ -1164,20 +1170,20 @@ function Maps() {
           <div className="mt-3 flex space-x-2">
             <button
               onClick={() => handleFilterSubmit("prediction")}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
               Apply Filter
             </button>
             <button
               onClick={() => clearFilters("prediction")}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="inline-flex items-center px-4 py-2 border border-green-300 text-sm font-medium rounded-md shadow-sm text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
               Clear
             </button>
           </div>
         </div>
         {/* Property Filter */}
-        <div className="bg-white p-3 rounded shadow-md">
+        <div className="bg-transparent p-3 rounded-xl shadow-md">
           <h3 className="font-bold text-gray-800 mb-2">Property Filters</h3>
           <div className="grid grid-cols-1 gap-2">
             <div>
@@ -1203,13 +1209,13 @@ function Maps() {
           <div className="mt-3 flex space-x-2">
             <button
               onClick={() => handleFilterSubmit("property")}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
               Apply Filter
             </button>
             <button
               onClick={() => clearFilters("property")}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="inline-flex items-center px-4 py-2 border border-green-300 text-sm font-medium rounded-md shadow-sm text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
               Clear
             </button>
@@ -1217,7 +1223,7 @@ function Maps() {
         </div>
 
         {/* River Filter */}
-        <div className="bg-white p-3 rounded shadow-md">
+        <div className="bg-transparent p-3 rounded-xl shadow-md">
           <h3 className="font-bold text-gray-800 mb-2">River Filters</h3>
           <div className="grid grid-cols-1 gap-2">
             <div>
@@ -1243,13 +1249,13 @@ function Maps() {
           <div className="mt-3 flex space-x-2">
             <button
               onClick={() => handleFilterSubmit("river")}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
               Apply Filter
             </button>
             <button
               onClick={() => clearFilters("river")}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="inline-flex items-center px-4 py-2 border border-green-300 text-sm font-medium rounded-md shadow-sm text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
               Clear
             </button>
@@ -1289,11 +1295,9 @@ function Maps() {
   return (
     <div className="flex flex-col h-screen">
       <Navbar className="z-20" />
-
       {/* Map container */}
       <div className="relative w-full h-screen">
         <div ref={mapContainer} className="w-full h-full" />
-        {/* Controls container - your existing controls */}
         <div className="absolute top-20 right-4 z-10 flex flex-col gap-2">
           {/* 2D/3D toggle */}
           <button
@@ -1303,8 +1307,6 @@ function Maps() {
           >
             {is3DMode ? <MapIcon /> : <CubeIcon />}
           </button>
-
-          {/* Custom zoom controls */}
           <button
             onClick={() => map.current && map.current.zoomIn()}
             className="bg-white p-2 rounded-lg shadow-lg hover:bg-gray-100 focus:outline-none"
@@ -1321,410 +1323,601 @@ function Maps() {
           </button>
         </div>
 
-        {/* Enhanced Map Controls Panel */}
-        <div className="absolute top-20 left-4 z-10 bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl">
-          {/* Header with collapsible functionality */}
-          <div
-            className="bg-cyan-600 text-white px-3 py-2 flex justify-between items-center cursor-pointer"
-            onClick={() => setIsPanelExpanded(!isPanelExpanded)}
-          >
-            <div className="flex items-center space-x-2">
-              <MapIcon size={18} />
-              <span className="font-medium">Map Controls</span>
+        <button
+          className={`
+    fixed z-30 group
+    bg-gradient-to-r from-green-300 to-blue-300 backdrop-blur-sm border border-gray-200/50
+    shadow-sm hover:shadow-md
+    transition-all duration-200 ease-out
+    hover:bg-white active:scale-95
+    ${
+      isSidebarOpen
+        ? "md:left-96 md:top-1/2 md:-translate-y-1/2 md:rounded-md bottom-6 right-6 md:right-auto rounded-md w-10 h-10"
+        : "md:left-4 md:top-1/2 md:-translate-y-1/2 md:rounded-md bottom-6 left-1/2 transform -translate-x-1/2 rounded-full md:transform-none md:translate-x-0 w-11 h-11"
+    }
+    flex items-center justify-center
+  `}
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          title={isSidebarOpen ? "Tutup Kontrol" : "Buka Kontrol Peta"}
+        >
+          {/* Desktop Icons */}
+          <div className="hidden md:block">
+            <div className="transition-transform duration-200 group-hover:scale-110">
+              {isSidebarOpen ? (
+                <ChevronLeftIcon
+                  size={16}
+                  className="text-gray-500 group-hover:text-blue-600 transition-colors duration-200"
+                />
+              ) : (
+                <ChevronRightIcon
+                  size={16}
+                  className="text-gray-500 group-hover:text-blue-600 transition-colors duration-200"
+                />
+              )}
             </div>
-            {isPanelExpanded ? (
-              <ChevronUpIcon size={18} />
-            ) : (
-              <ChevronDownIcon size={18} />
-            )}
           </div>
 
-          {/* Panel Body - Collapsible */}
-          {isPanelExpanded && (
-            <div className="p-3 max-h-[600px] overflow-y-auto">
+          {/* Mobile Icons */}
+          <div className="md:hidden">
+            <div className="transition-transform duration-200 group-hover:scale-110">
+              {isSidebarOpen ? (
+                <ChevronDownIcon
+                  size={18}
+                  className="text-slate-600 group-hover:text-blue-600 transition-colors duration-200"
+                />
+              ) : (
+                <ChevronUpIcon
+                  size={18}
+                  className="text-slate-600 group-hover:text-blue-600 transition-colors duration-200"
+                />
+              )}
+            </div>
+          </div>
+        </button>
+
+        {/* Desktop Sidebar Panel */}
+        <div
+          className={`hidden md:block fixed top-16 left-0 h-[calc(100vh-4rem)] w-96 bg-transparent backdrop-blur-lg shadow-xl border-r border-gray-100/60 transform transition-transform duration-300 ease-in-out z-20 ${
+            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          {/* Sidebar Header */}
+          <div className=" bg-transparent m-4 rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="bg-transparent px-6 py-4 flex items-center justify-between border-b border-gray-100">
+              <div className="flex items-center space-x-4">
+                <div className="relative group">
+                  <img
+                    src="Artboard 3.png"
+                    alt="Map Icon"
+                    className="w-12 h-12"
+                  />
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full border-2 border-white shadow-sm"></div>
+                </div>
+                <div>
+                  <h1 className="font-bold text-xl text-gray-800">
+                    Map Controls
+                  </h1>
+                  <div className="text-sm text-gray-600 flex items-center space-x-2">
+                    <span>Interactive Location Manager</span>
+                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                    <span className="text-green-600 font-medium">Online</span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsSidebarOpen(false)}
+                className="group hover:bg-gray-100 active:bg-gray-200 p-2.5 rounded-xl transition-all duration-150 text-gray-500 hover:text-gray-700"
+                title="Close Panel"
+              >
+                <XIcon
+                  size={18}
+                  className="group-hover:rotate-90 transition-transform duration-200"
+                />
+              </button>
+            </div>
+          </div>
+
+          {/* Desktop Sidebar Content */}
+          <div
+            className="h-full overflow-y-auto pb-20 custom-scrollbar"
+            style={{
+              scrollbarWidth: "thin",
+              scrollbarColor: "#d1d5db transparent",
+            }}
+          >
+            <div className="p-6">
               {/* Filter Section */}
               <FilterSection />
-              {/* Layers Section with improved toggles */}
-              <div className="mb-4">
-                <div className="flex items-center space-x-2 mb-2 pb-1 border-b border-gray-200 text-cyan-700">
-                  <LayersIcon size={16} />
-                  <span className="font-medium">Map Layers</span>
+
+              {/* Layers Section */}
+              <div className="mb-8">
+                <div className="flex items-center space-x-3 mb-5 pb-3 border-b border-gray-100">
+                  <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-md flex items-center justify-center">
+                    <LayersIcon size={14} className="text-white" />
+                  </div>
+                  <span className="font-semibold text-lg text-gray-800">
+                    Map Layers
+                  </span>
                 </div>
 
-                <div className="space-y-3 mt-2">
-                  {/* River Toggle - Enhanced */}
-                  <div className="flex items-center justify-between px-1 py-2 hover:bg-gray-50 rounded-lg transition-colors">
+                <div className="space-y-3">
+                  {/* River Toggle */}
+                  <div className="flex items-center justify-between p-4 hover:bg-gradient-to-r hover:from-blue-50/80 hover:to-cyan-50/60 rounded-xl transition-all duration-200 border border-gray-50">
                     <div className="flex items-center">
                       <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
                           showRivers
-                            ? "bg-blue-100 text-blue-600"
-                            : "bg-gray-100 text-gray-500"
+                            ? "bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-sm"
+                            : "bg-gray-50 text-gray-400"
                         }`}
                       >
-                        <DropletIcon size={16} />
+                        <DropletIcon size={20} />
                       </div>
-                      <label htmlFor="river" className="ml-2 cursor-pointer">
-                        <div className="font-medium text-sm">Rivers</div>
-                        <div className="text-xs text-gray-500">
+                      <div className="ml-4">
+                        <div className="font-medium text-gray-800">Rivers</div>
+                        <div className="text-sm text-gray-500">
                           {showRivers ? "Visible on map" : "Hidden from view"}
                         </div>
-                      </label>
+                      </div>
                     </div>
-                    <div className="relative inline-block w-12 align-middle select-none">
-                      <input
-                        type="checkbox"
-                        id="river"
-                        checked={showRivers}
-                        onChange={() => setShowRivers(!showRivers)}
-                        className="hidden"
-                      />
+                    <div className="relative inline-block w-14 align-middle select-none">
                       <div
-                        className={`block w-12 h-6 rounded-full cursor-pointer transition-colors ${
-                          showRivers ? "bg-blue-500" : "bg-gray-300"
+                        className={`block w-14 h-7 rounded-full cursor-pointer transition-all duration-300 shadow-inner ${
+                          showRivers
+                            ? "bg-gradient-to-r from-blue-500 to-cyan-400"
+                            : "bg-gray-200"
                         }`}
                         onClick={() => setShowRivers(!showRivers)}
-                      ></div>
-                      <div
-                        className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform transform ${
-                          showRivers ? "translate-x-6" : "translate-x-0"
-                        }`}
-                        onClick={() => setShowRivers(!showRivers)}
-                      ></div>
+                      >
+                        <div
+                          className={`absolute top-0.5 left-0.5 bg-white w-6 h-6 rounded-full transition-transform duration-300 shadow-md ${
+                            showRivers ? "translate-x-7" : "translate-x-0"
+                          }`}
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  {/* Administrative Boundaries Toggle - Enhanced */}
-                  <div className="flex items-center justify-between px-1 py-2 hover:bg-gray-50 rounded-lg transition-colors">
+                  {/* Administrative Boundaries Toggle */}
+                  <div className="flex items-center justify-between p-4 hover:bg-gradient-to-r hover:from-blue-50/80 hover:to-cyan-50/60 rounded-xl transition-all duration-200 border border-gray-50">
                     <div className="flex items-center">
                       <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
                           showAdministrativeBoundaries
-                            ? "bg-blue-100 text-blue-600"
-                            : "bg-gray-100 text-gray-500"
+                            ? "bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-sm"
+                            : "bg-gray-50 text-gray-400"
                         }`}
                       >
-                        <MapIcon size={16} />
+                        <MapIcon size={20} />
                       </div>
-                      <label htmlFor="district" className="ml-2 cursor-pointer">
-                        <div className="font-medium text-sm">Boundaries</div>
-                        <div className="text-xs text-gray-500">
+                      <div className="ml-4">
+                        <div className="font-medium text-gray-800">
+                          Boundaries
+                        </div>
+                        <div className="text-sm text-gray-500">
                           {showAdministrativeBoundaries
                             ? "Administrative borders shown"
                             : "Borders hidden"}
                         </div>
-                      </label>
+                      </div>
                     </div>
-                    <div className="relative inline-block w-12 align-middle select-none">
-                      <input
-                        type="checkbox"
-                        id="district"
-                        checked={showAdministrativeBoundaries}
-                        onChange={() =>
-                          setShowAdministrativeBoundaries(
-                            !showAdministrativeBoundaries
-                          )
-                        }
-                        className="hidden"
-                      />
+                    <div className="relative inline-block w-14 align-middle select-none">
                       <div
-                        className={`block w-12 h-6 rounded-full cursor-pointer transition-colors ${
+                        className={`block w-14 h-7 rounded-full cursor-pointer transition-all duration-300 shadow-inner ${
                           showAdministrativeBoundaries
-                            ? "bg-blue-500"
-                            : "bg-gray-300"
+                            ? "bg-gradient-to-r from-blue-500 to-cyan-400"
+                            : "bg-gray-200"
                         }`}
                         onClick={() =>
                           setShowAdministrativeBoundaries(
                             !showAdministrativeBoundaries
                           )
                         }
-                      ></div>
-                      <div
-                        className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform transform ${
-                          showAdministrativeBoundaries
-                            ? "translate-x-6"
-                            : "translate-x-0"
-                        }`}
-                        onClick={() =>
-                          setShowAdministrativeBoundaries(
-                            !showAdministrativeBoundaries
-                          )
-                        }
-                      ></div>
+                      >
+                        <div
+                          className={`absolute top-0.5 left-0.5 bg-white w-6 h-6 rounded-full transition-transform duration-300 shadow-md ${
+                            showAdministrativeBoundaries
+                              ? "translate-x-7"
+                              : "translate-x-0"
+                          }`}
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  {/* Prediction Toggle - Enhanced */}
-                  <div className="flex items-center justify-between px-1 py-2 hover:bg-gray-50 rounded-lg transition-colors">
+                  {/* Prediction Toggle */}
+                  <div className="flex items-center justify-between p-4 hover:bg-gradient-to-r hover:from-blue-50/80 hover:to-cyan-50/60 rounded-xl transition-all duration-200 border border-gray-50">
                     <div className="flex items-center">
                       <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
                           showPrediction
-                            ? "bg-blue-100 text-blue-600"
-                            : "bg-gray-100 text-gray-500"
+                            ? "bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-sm"
+                            : "bg-gray-50 text-gray-400"
                         }`}
                       >
-                        <ActivityIcon size={16} />
+                        <ActivityIcon size={20} />
                       </div>
-                      <label
-                        htmlFor="prediction"
-                        className="ml-2 cursor-pointer"
-                      >
-                        <div className="font-medium text-sm">
+                      <div className="ml-4">
+                        <div className="font-medium text-gray-800">
                           Prediction Layer
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-sm text-gray-500">
                           {showPrediction
                             ? "Analysis data visible"
                             : "Analysis hidden"}
                         </div>
-                      </label>
+                      </div>
                     </div>
-                    <div className="relative inline-block w-12 align-middle select-none">
-                      <input
-                        type="checkbox"
-                        id="prediction"
-                        checked={showPrediction}
-                        onChange={() => setShowPrediction(!showPrediction)}
-                        className="hidden"
-                      />
+                    <div className="relative inline-block w-14 align-middle select-none">
                       <div
-                        className={`block w-12 h-6 rounded-full cursor-pointer transition-colors ${
-                          showPrediction ? "bg-blue-500" : "bg-gray-300"
+                        className={`block w-14 h-7 rounded-full cursor-pointer transition-all duration-300 shadow-inner ${
+                          showPrediction
+                            ? "bg-gradient-to-r from-blue-500 to-cyan-400"
+                            : "bg-gray-200"
                         }`}
                         onClick={() => setShowPrediction(!showPrediction)}
-                      ></div>
-                      <div
-                        className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform transform ${
-                          showPrediction ? "translate-x-6" : "translate-x-0"
-                        }`}
-                        onClick={() => setShowPrediction(!showPrediction)}
-                      ></div>
+                      >
+                        <div
+                          className={`absolute top-0.5 left-0.5 bg-white w-6 h-6 rounded-full transition-transform duration-300 shadow-md ${
+                            showPrediction ? "translate-x-7" : "translate-x-0"
+                          }`}
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between px-1 py-2 hover:bg-gray-50 rounded-lg transition-colors">
+                  {/* Properties Toggle */}
+                  <div className="flex items-center justify-between p-4 hover:bg-gradient-to-r hover:from-blue-50/80 hover:to-cyan-50/60 rounded-xl transition-all duration-200 border border-gray-50">
                     <div className="flex items-center">
                       <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
                           showProperties
-                            ? "bg-blue-100 text-blue-600"
-                            : "bg-gray-100 text-gray-500"
+                            ? "bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-sm"
+                            : "bg-gray-50 text-gray-400"
                         }`}
                       >
-                        <HomeIcon size={16} />
+                        <HomeIcon size={20} />
                       </div>
-                      <label
-                        htmlFor="properties"
-                        className="ml-2 cursor-pointer"
-                      >
-                        <div className="font-medium text-sm">Properties</div>
-                        <div className="text-xs text-gray-500">
+                      <div className="ml-4">
+                        <div className="font-medium text-gray-800">
+                          Properties
+                        </div>
+                        <div className="text-sm text-gray-500">
                           {showProperties
                             ? "Property listings visible"
                             : "Properties hidden"}
                         </div>
-                      </label>
+                      </div>
                     </div>
-                    <div className="relative inline-block w-12 align-middle select-none">
-                      <input
-                        type="checkbox"
-                        id="properties"
-                        checked={showProperties}
-                        onChange={() => setShowProperties(!showProperties)}
-                        className="hidden"
-                      />
+                    <div className="relative inline-block w-14 align-middle select-none">
                       <div
-                        className={`block w-12 h-6 rounded-full cursor-pointer transition-colors ${
-                          showProperties ? "bg-blue-500" : "bg-gray-300"
+                        className={`block w-14 h-7 rounded-full cursor-pointer transition-all duration-300 shadow-inner ${
+                          showProperties
+                            ? "bg-gradient-to-r from-blue-500 to-cyan-400"
+                            : "bg-gray-200"
                         }`}
                         onClick={() => setShowProperties(!showProperties)}
-                      ></div>
-                      <div
-                        className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform transform ${
-                          showProperties ? "translate-x-6" : "translate-x-0"
-                        }`}
-                        onClick={() => setShowProperties(!showProperties)}
-                      ></div>
+                      >
+                        <div
+                          className={`absolute top-0.5 left-0.5 bg-white w-6 h-6 rounded-full transition-transform duration-300 shadow-md ${
+                            showProperties ? "translate-x-7" : "translate-x-0"
+                          }`}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Map Styles Section - Enhanced with thumbnails */}
+              {/* Map Styles Section */}
               <div>
-                <div className="flex items-center space-x-2 mb-2 pb-1 border-b border-gray-200 text-cyan-700">
-                  <MapPinIcon size={16} />
-                  <span className="font-medium">Map Style</span>
+                <div className="flex items-center space-x-3 mb-5 pb-3 border-b border-gray-100">
+                  <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-green-400 rounded-md flex items-center justify-center">
+                    <MapPinIcon size={14} className="text-white" />
+                  </div>
+                  <span className="font-semibold text-lg text-gray-800">
+                    Map Style
+                  </span>
                 </div>
-                <div className="grid grid-cols-2 gap-2 mt-2">
+                <div className="grid grid-cols-2 gap-3">
                   {Object.keys(mapStyleImages).map((style) => (
                     <div
                       key={style}
-                      className={`rounded-lg border p-2 cursor-pointer transition-all ${
+                      className={`rounded-xl border-2 p-3 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-md ${
                         mapStyle === style
-                          ? "border-blue-500 bg-blue-50 shadow-md"
-                          : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
+                          ? "border-blue-400 bg-gradient-to-br from-blue-50/70 to-cyan-50/50 shadow-md"
+                          : "border-gray-100 hover:border-blue-200 hover:bg-gray-50/40"
                       }`}
                       onClick={() => setMapStyle(style)}
                     >
-                      <div className="h-16 bg-gray-100 rounded mb-1 overflow-hidden">
+                      <div className="h-20 bg-gray-50 rounded-lg mb-3 overflow-hidden">
                         <img
                           src={`/${mapStyleImages[style]}`}
                           alt={style}
                           className="w-full h-full object-cover"
                         />
                       </div>
-                      <div className="flex items-center justify-center mt-1">
-                        <div className="w-3 h-3 mr-1 rounded-full flex-shrink-0">
+                      <div className="flex items-center justify-center">
+                        <div
+                          className={`w-4 h-4 mr-2 rounded-full border-2 flex-shrink-0 ${
+                            mapStyle === style
+                              ? "border-blue-400"
+                              : "border-gray-300"
+                          }`}
+                        >
                           {mapStyle === style && (
-                            <div className="w-full h-full bg-blue-500 rounded-full"></div>
+                            <div className="w-full h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full scale-75"></div>
                           )}
                         </div>
-                        <span className="text-xs capitalize">{style}</span>
+                        <span className="text-sm font-medium capitalize text-gray-700">
+                          {style}
+                        </span>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
-          )}
-
-          {/* Quick Action Buttons - Always visible even when collapsed */}
-          {!isPanelExpanded && (
-            <div className="p-2 grid grid-cols-5 gap-2">
-              <button
-                className={`p-2 rounded ${
-                  showRivers
-                    ? "bg-blue-100 text-blue-600"
-                    : "bg-gray-100 text-gray-500"
-                } hover:bg-blue-50`}
-                onClick={() => setShowRivers(!showRivers)}
-                title={showRivers ? "Hide Rivers" : "Show Rivers"}
-              >
-                <DropletIcon size={16} />
-              </button>
-              <button
-                className={`p-2 rounded ${
-                  showAdministrativeBoundaries
-                    ? "bg-blue-100 text-blue-600"
-                    : "bg-gray-100 text-gray-500"
-                } hover:bg-blue-50`}
-                onClick={() =>
-                  setShowAdministrativeBoundaries(!showAdministrativeBoundaries)
-                }
-                title={
-                  showAdministrativeBoundaries
-                    ? "Hide Boundaries"
-                    : "Show Boundaries"
-                }
-              >
-                <MapIcon size={16} />
-              </button>
-              <button
-                className={`p-2 rounded ${
-                  showPrediction
-                    ? "bg-blue-100 text-blue-600"
-                    : "bg-gray-100 text-gray-500"
-                } hover:bg-blue-50`}
-                onClick={() => setShowPrediction(!showPrediction)}
-                title={showPrediction ? "Hide Prediction" : "Show Prediction"}
-              >
-                <ActivityIcon size={16} />
-              </button>
-              <button
-                className={`p-2 rounded ${
-                  showProperties
-                    ? "bg-blue-100 text-blue-600"
-                    : "bg-gray-100 text-gray-500"
-                } hover:bg-blue-50`}
-                onClick={() => setShowProperties(!showProperties)}
-                title={showProperties ? "Hide Properties" : "Show Properties"}
-              >
-                <HomeIcon size={16} />
-              </button>
-              <button
-                className="p-2 rounded bg-gray-100 text-gray-500 hover:bg-blue-50"
-                onClick={() => setMapStyleMenuOpen(!mapStyleMenuOpen)}
-                title="Map Style"
-              >
-                <LayersIcon size={16} />
-              </button>
-            </div>
-          )}
-
-          {/* Quick style selector dropdown - displayed when mapStyleMenuOpen is true */}
-          {!isPanelExpanded && mapStyleMenuOpen && (
-            <div className="absolute left-full ml-2 mt-2 bg-white rounded-lg shadow-lg p-2 z-20 w-40">
-              <div className="text-sm font-medium mb-2 text-gray-700">
-                Select Map Style
-              </div>
-              {Object.keys(mapStyles).map((style) => (
-                <div
-                  key={style}
-                  className={`flex items-center px-2 py-1 hover:bg-gray-100 rounded cursor-pointer ${
-                    mapStyle === style ? "bg-blue-100" : ""
-                  }`}
-                  onClick={() => {
-                    setMapStyle(style);
-                    setMapStyleMenuOpen(false);
-                  }}
-                >
-                  <div className="w-3 h-3 mr-2 rounded-full border border-gray-300 flex-shrink-0">
-                    {mapStyle === style && (
-                      <div className="w-full h-full bg-blue-500 rounded-full"></div>
-                    )}
-                  </div>
-                  <span className="text-sm capitalize">{style}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          </div>
         </div>
+
+        {/* Mobile Bottom Sheet */}
+        <div
+          className={`md:hidden fixed bottom-0 left-0 right-0 bg-transparent backdrop-blur-xl shadow-2xl border-t border-white/20 transform transition-transform duration-300 ease-in-out z-20 rounded-t-2xl ${
+            isSidebarOpen ? "translate-y-0" : "translate-y-full"
+          }`}
+          style={{ height: "75vh" }}
+        >
+          {/* Mobile Header with Drag Handle - Transparent */}
+          <div className="bg-transparent backdrop-blur-lg text-white px-5 py-4 flex items-center justify-between border-b border-white/10 rounded-t-2xl">
+            {/* Drag Handle */}
+            <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-white/50 rounded-full"></div>
+
+            <div className="flex items-center space-x-3 mt-2">
+              <img src="Artboard 3.png" alt="Map Icon" className="w-12 h-12" />
+              <span className="font-semibold drop-shadow-lg">Map Controls</span>
+            </div>
+
+            <button
+              onClick={() => setIsSidebarOpen(false)}
+              className="hover:bg-white/20 p-1.5 rounded-lg transition-colors mt-2"
+              title="Close Controls"
+            >
+              <XIcon size={16} />
+            </button>
+          </div>
+
+          {/* Mobile Content - Transparent */}
+          <div className="h-full overflow-y-auto pb-6 bg-transparent">
+            <div className="p-4">
+              {/* Quick Actions for Mobile - Transparent */}
+              <div className="grid grid-cols-4 gap-3 mb-6">
+                <button
+                  className={`p-3 rounded-xl border backdrop-blur-md transition-all ${
+                    showRivers
+                      ? "bg-blue-500/30 text-white border-blue-300/50 shadow-lg"
+                      : "bg-black/30 text-white border-white/30 hover:bg-black/40"
+                  }`}
+                  onClick={() => setShowRivers(!showRivers)}
+                >
+                  <DropletIcon
+                    size={18}
+                    className="mx-auto mb-1 text-white drop-shadow-lg"
+                  />
+                  <div className="text-xs font-semibold text-white drop-shadow">
+                    Rivers
+                  </div>
+                </button>
+
+                <button
+                  className={`p-3 rounded-xl border backdrop-blur-md transition-all ${
+                    showAdministrativeBoundaries
+                      ? "bg-blue-500/30 text-white border-blue-300/50 shadow-lg"
+                      : "bg-black/30 text-white border-white/30 hover:bg-black/40"
+                  }`}
+                  onClick={() =>
+                    setShowAdministrativeBoundaries(
+                      !showAdministrativeBoundaries
+                    )
+                  }
+                >
+                  <MapIcon
+                    size={18}
+                    className="mx-auto mb-1 text-white drop-shadow-lg"
+                  />
+                  <div className="text-xs font-semibold text-white drop-shadow">
+                    Boundaries
+                  </div>
+                </button>
+
+                <button
+                  className={`p-3 rounded-xl border backdrop-blur-md transition-all ${
+                    showPrediction
+                      ? "bg-blue-500/30 text-white border-blue-300/50 shadow-lg"
+                      : "bg-black/30 text-white border-white/30 hover:bg-black/40"
+                  }`}
+                  onClick={() => setShowPrediction(!showPrediction)}
+                >
+                  <ActivityIcon
+                    size={18}
+                    className="mx-auto mb-1 text-white drop-shadow-lg"
+                  />
+                  <div className="text-xs font-semibold text-white drop-shadow">
+                    Prediction
+                  </div>
+                </button>
+
+                <button
+                  className={`p-3 rounded-xl border backdrop-blur-md transition-all ${
+                    showProperties
+                      ? "bg-blue-500/30 text-white border-blue-300/50 shadow-lg"
+                      : "bg-black/30 text-white border-white/30 hover:bg-black/40"
+                  }`}
+                  onClick={() => setShowProperties(!showProperties)}
+                >
+                  <HomeIcon
+                    size={18}
+                    className="mx-auto mb-1 text-white drop-shadow-lg"
+                  />
+                  <div className="text-xs font-semibold text-white drop-shadow">
+                    Properties
+                  </div>
+                </button>
+              </div>
+
+              {/* Filter Section for Mobile - Transparent */}
+              <div className="mb-6">
+                <div className="flex items-center space-x-2 mb-3 pb-2 border-b border-white/20 text-white">
+                  <FilterIcon size={18} className="text-black" />
+                  <span className="font-semibold text-black">Filters</span>
+                </div>
+                <FilterSection />
+              </div>
+
+              {/* Map Styles for Mobile - Transparent */}
+              <div>
+                <div className="flex items-center space-x-2 mb-3 pb-2 border-b border-white/20 text-white">
+                  <MapPinIcon size={18} className="text-black" />
+                  <span className="font-semibold text-black">Map Style</span>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {Object.keys(mapStyleImages).map((style) => (
+                    <div
+                      key={style}
+                      className={`rounded-lg border-2 p-2 cursor-pointer transition-all backdrop-blur-sm ${
+                        mapStyle === style
+                          ? "border-blue-400/70 bg-blue-500/20 shadow-lg"
+                          : "border-white/30 hover:border-blue-400/50 bg-white/10"
+                      }`}
+                      onClick={() => setMapStyle(style)}
+                    >
+                      <div className="h-16 bg-white/20 backdrop-blur-sm rounded-md mb-2 overflow-hidden">
+                        <img
+                          src={`/${mapStyleImages[style]}`}
+                          alt={style}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex items-center justify-center">
+                        <div className="w-3 h-3 mr-1 rounded-full border flex-shrink-0 border-white/50">
+                          {mapStyle === style && (
+                            <div className="w-full h-full bg-blue-400 rounded-full scale-75"></div>
+                          )}
+                        </div>
+                        <span className="text-xs font-medium capitalize text-white/90">
+                          {style}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Overlay to close sidebar when clicking outside */}
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 z-10"
+            onClick={() => setIsSidebarOpen(false)}
+          ></div>
+        )}
 
         {/* Feature Info Panel - displays when a feature is clicked */}
         {showInfoPanel && selectedFeature && (
           <div
-            className="absolute top-24 right-20 z-20 bg-white rounded-2xl shadow-2xl p-5 w-80 max-h-[rem] border border-gray-100 overflow-hidden transition-all duration-300 ease-in-out"
+            className={`fixed z-30 shadow-2xl overflow-hidden transition-all duration-300 ease-out backdrop-blur-xl bg-white/10 border border-white/30
+      ${
+        // Mobile: bottom sheet
+        "bottom-0 left-0 right-0 rounded-t-2xl max-h-[70vh] md:max-h-none"
+      }
+      ${
+        // Desktop: side panel
+        "md:absolute md:top-24 md:bottom-auto md:left-20 md:right-auto md:rounded-2xl md:w-80"
+      }
+      ${isSidebarOpen ? "md:left-[350px]" : "md:left-20"}
+    `}
             style={{
-              transform: showInfoPanel ? "translateX(0)" : "translateX(100%)",
-              opacity: showInfoPanel ? 1 : 0,
+              transform: showInfoPanel ? "translateY(0)" : "translateY(100%)",
+              background:
+                "linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%)",
+              boxShadow:
+                "0 25px 45px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.2) inset",
             }}
           >
+            {/* Custom Scrollbar CSS */}
+            <style jsx>{`
+              .custom-scroll::-webkit-scrollbar {
+                width: 6px;
+              }
+              .custom-scroll::-webkit-scrollbar-track {
+                background: #f1f5f9;
+                border-radius: 3px;
+              }
+              .custom-scroll::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 3px;
+                transition: background 0.2s ease;
+              }
+              .custom-scroll::-webkit-scrollbar-thumb:hover {
+                background: #94a3b8;
+              }
+            `}</style>
+
             {/* Header */}
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center space-x-2">
-                <div className="bg-blue-100 p-2 rounded-lg">
-                  <MapPinIcon className="w-5 h-5 text-blue-600" />
+            <div
+              className="px-4 py-3 md:px-6 md:py-4 border-b border-white/20 backdrop-blur-sm"
+              style={{
+                background:
+                  "linear-gradient(135deg, rgba(59,130,246,0.3) 0%, rgba(37,99,235,0.2) 100%)",
+              }}
+            >
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-3">
+                  <MapPinIcon className="w-5 h-5 text-white" />
+                  <h3 className="font-bold text-white text-sm md:text-lg">
+                    {formatFeatureInfo(selectedFeature)?.title ||
+                      "Detail Lokasi"}
+                  </h3>
                 </div>
-                <h3 className="font-semibold text-lg text-gray-800">
-                  {formatFeatureInfo(selectedFeature)?.title || "Detail Lokasi"}
-                </h3>
+                <button
+                  onClick={() => {
+                    setShowInfoPanel(false);
+                    setSelectedFeature(null);
+                  }}
+                  className="text-white hover:bg-white/20 p-2 rounded-lg"
+                >
+                  <XIcon className="w-4 h-4" />
+                </button>
               </div>
-              <button
-                onClick={() => {
-                  setShowInfoPanel(false);
-                  setSelectedFeature(null);
-                }}
-                className="text-gray-400 hover:text-gray-600 transition rounded-full p-1 hover:bg-gray-100"
-                aria-label="Close info panel"
-              >
-                <XIcon className="w-5 h-5" />
-              </button>
             </div>
 
-            {/* Scrollable content wrapper */}
-            <div className="space-y-3 overflow-y-auto max-h-60 pr-1 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+            {/* Content */}
+            <div
+              className="overflow-y-auto p-4 space-y-3 custom-scroll backdrop-blur-sm"
+              style={{
+                maxHeight: "calc(70vh - 60px)",
+                scrollbarWidth: "thin",
+                scrollbarColor: "#cbd5e1 #f1f5f9",
+                background: "rgba(248,250,252,0.1)",
+              }}
+            >
               {formatFeatureInfo(selectedFeature)?.details.map(
                 (item, index) => (
                   <div
                     key={index}
-                    className="pb-3 border-b border-gray-200 hover:bg-gray-50 p-2 rounded-md transition-colors duration-150"
+                    className="rounded-lg p-3 shadow-sm border border-white/40 backdrop-blur-sm"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.1) 100%)",
+                      boxShadow:
+                        "0 8px 16px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.3) inset",
+                    }}
                   >
-                    <div className="text-sm font-medium text-gray-500 mb-1">
+                    <div className="text-xs font-medium text-gray-700 mb-1">
                       {item.label}
                     </div>
-                    <div className="text-base text-gray-800 break-words">
+                    <div className="text-sm text-gray-900 font-medium">
                       {item.isHTML ? (
                         <div dangerouslySetInnerHTML={{ __html: item.value }} />
                       ) : (
@@ -1734,21 +1927,16 @@ function Maps() {
                   </div>
                 )
               )}
-            </div>
 
-            {/* Footer actions */}
-            <div className="mt-6 flex justify-between items-center">
-              {/* <div className="flex space-x-2">
-                <button
-                  onClick={() => {
-                    setShowInfoPanel(false);
-                    setSelectedFeature(null);
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg shadow hover:bg-blue-700 transition"
-                >
-                  Tutup
-                </button>
-              </div> */}
+              {(!formatFeatureInfo(selectedFeature)?.details ||
+                formatFeatureInfo(selectedFeature)?.details.length === 0) && (
+                <div className="text-center py-8">
+                  <MapPinIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-500 text-sm">
+                    Tidak ada informasi tersedia
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
