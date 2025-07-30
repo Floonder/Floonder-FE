@@ -22,6 +22,13 @@ import {
   Home as HomeIcon,
 } from "lucide-react";
 
+import {
+  fetchRiverData,
+  fetchAdministrativeData,
+  fetchPredictionData,
+  fetchPropertyData,
+} from "../services/mapsapi.js";
+
 function Maps() {
   const MAP_SERVICE_KEY = import.meta.env.VITE_MAP_SERVICE_KEY;
   const mapContainer = useRef(null);
@@ -41,12 +48,12 @@ function Maps() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [mapStyleMenuOpen, setMapStyleMenuOpen] = useState(false);
 
-  // New states for filters
+  // States for filters
   const [filters, setFilters] = useState({
     administrative: { city: "Kota Bandung", month: new Date().getMonth() + 1 },
     prediction: { city: "", month: new Date().getMonth() + 1, year: "" },
     property: { city: "" },
-    river: { city: "" }, //
+    river: { city: "" },
   });
 
   // Options for dropdowns
@@ -62,7 +69,7 @@ function Maps() {
   ];
 
   // Map style state and options
-  const [mapStyle, setMapStyle] = useState("street"); // Default style
+  const [mapStyle, setMapStyle] = useState("street");
   const mapStyles = {
     dark: `https://basemap.mapid.io/styles/dark/style.json?key=${MAP_SERVICE_KEY}`,
     street: `https://basemap.mapid.io/styles/street-new-generation/style.json?key=${MAP_SERVICE_KEY}`,
@@ -76,758 +83,491 @@ function Maps() {
     street: "Street.png",
   };
 
-  useEffect(() => {
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: mapStyles[mapStyle],
-      center: [107.6098, -6.9149],
-      zoom: 100,
-      pitch: is3DMode ? 80 : 0,
-    });
-
-    map.current.on("load", () => {
-      console.log("map loaded");
-
-      map.current.addControl(
-        new maplibregl.NavigationControl(),
-        "bottom-right"
-      );
-    });
-
-    return () => map.current?.remove();
-  }, []);
-
-  const fetchRiverData = async (city) => {
+  // API wrapper functions to handle state updates
+  const handleFetchRiverData = async (city) => {
     try {
-      // Build query parameters
-      const params = new URLSearchParams();
-      if (city) params.append("kota", city);
-      params.append("limit", "10000");
-
-      const url = `${
-        import.meta.env.VITE_HOST_API
-      }/api/public/gis/sungai?${params.toString()}`;
-
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP Error! Status: ${response.status}`);
-      }
-
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("Unexpected response content:", text);
-        throw new Error("Response is not JSON");
-      }
-
-      const data = await response.json();
-
-      // Ambil data dari `results.features`
-      const riverFeatures = data.results?.features;
-
-      if (!Array.isArray(riverFeatures)) {
-        throw new Error("Expected an array of river features");
-      }
-
-      const validRiverData = riverFeatures.filter(
-        (river) =>
-          river.type === "Feature" &&
-          river.geometry &&
-          river.geometry.type === "MultiLineString" &&
-          river.geometry.coordinates
-      );
-
-      setRiverData(validRiverData);
-      // console.log("Fetched River Data:", validRiverData);
+      const data = await fetchRiverData(city);
+      setRiverData(data);
     } catch (error) {
-      console.error("Error fetching river data:", error.message);
-    }
-  };
-  // Handle river data rendering
-  useEffect(() => {
-    if (map.current && riverData.length > 0 && showRivers) {
-      // Remove existing river layer if it exists
-      if (map.current.getSource("rivers")) {
-        map.current.removeLayer("river-lines");
-        map.current.removeSource("rivers");
-      }
-
-      // Add river data as a source
-      map.current.addSource("rivers", {
-        type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features: riverData,
-        },
-      });
-
-      // Add river lines layer
-      map.current.addLayer({
-        id: "river-lines",
-        type: "line",
-        source: "rivers",
-        paint: {
-          "line-color": "#FF0000",
-          "line-width": 10,
-          "line-opacity": 1,
-        },
-      });
-    } else if (map.current && map.current.getSource("rivers")) {
-      // Remove river layer if rivers are hidden
-      map.current.removeLayer("river-lines");
-      map.current.removeSource("rivers");
-    }
-  }, [riverData, showRivers]);
-
-  const fetchAdministrativeData = async (city, month) => {
-    try {
-      // Build query parameters
-      const params = new URLSearchParams();
-      if (city) params.append("kota", city);
-      if (month) params.append("month", month);
-      params.append("limit", "10000");
-
-      const url = `${
-        import.meta.env.VITE_HOST_API
-      }/api/public/gis/wilayah-administrasi?${params.toString()}`;
-
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP Error! Status: ${response.status}`);
-      }
-
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("Unexpected response content:", text);
-        throw new Error("Response is not JSON");
-      }
-
-      const data = await response.json();
-
-      // Ambil data dari `results.features`
-      const administrativeFeatures = data.results?.features;
-
-      if (!Array.isArray(administrativeFeatures)) {
-        throw new Error("Expected an array of administrative features");
-      }
-
-      const validAdministrativeData = administrativeFeatures.filter(
-        (feature) =>
-          feature.type === "Feature" &&
-          feature.geometry &&
-          feature.geometry.type === "MultiPolygon" &&
-          feature.geometry.coordinates
-      );
-
-      setAdministrativeData(validAdministrativeData);
-      // console.log("Fetched Administrative Data:", validAdministrativeData);
-    } catch (error) {
-      console.error("Error fetching administrative data:", error.message);
+      console.error("Failed to fetch river data:", error);
+      setRiverData([]);
     }
   };
 
-  useEffect(() => {
-    if (
-      map.current &&
-      administrativeData.length > 0 &&
-      showAdministrativeBoundaries
-    ) {
-      // Remove existing administrative boundaries layer if it exists
-      if (map.current.getSource("administrative-boundaries")) {
-        map.current.removeLayer("administrative-boundaries-fill");
-        map.current.removeLayer("administrative-boundaries-line");
-        map.current.removeSource("administrative-boundaries");
-      }
-
-      // Add administrative boundaries as a source
-      map.current.addSource("administrative-boundaries", {
-        type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features: administrativeData,
-        },
-      });
-
-      // Add administrative boundaries fill layer
-      map.current.addLayer({
-        id: "administrative-boundaries-fill",
-        type: "fill",
-        source: "administrative-boundaries",
-        paint: {
-          "fill-color": "#FF0000",
-          "fill-opacity": 0.2,
-        },
-      });
-
-      // Add administrative boundaries line layer
-      map.current.addLayer({
-        id: "administrative-boundaries-line",
-        type: "line",
-        source: "administrative-boundaries",
-        paint: {
-          "line-color": "#FF0000",
-          "line-width": 2,
-          "line-opacity": 0.7,
-        },
-      });
-    } else if (
-      map.current &&
-      map.current.getSource("administrative-boundaries")
-    ) {
-      // Remove administrative boundaries layers if hidden
-      map.current.removeLayer("administrative-boundaries-fill");
-      map.current.removeLayer("administrative-boundaries-line");
-      map.current.removeSource("administrative-boundaries");
-    }
-  }, [administrativeData, showAdministrativeBoundaries]);
-
-  // Updated to fetch and filter Point geometry type for flood prediction data
-  const fetchPredictionData = async (city, month, year) => {
+  const handleFetchAdministrativeData = async (city, month) => {
     try {
-      // Build query parameters
-      const params = new URLSearchParams();
-      if (city) params.append("kota", city);
-      if (month) params.append("month", month);
-      if (year) params.append("year", year);
-      params.append("limit", "10000");
-
-      const url = `${
-        import.meta.env.VITE_HOST_API
-      }/api/public/gis/flood-point?${params.toString()}`;
-
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP Error! Status: ${response.status}`);
-      }
-
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("Unexpected response content:", text);
-        throw new Error("Response is not JSON");
-      }
-
-      const data = await response.json();
-      const predictionFeatures = data.results?.features;
-      if (!Array.isArray(predictionFeatures)) {
-        throw new Error("Expected an array of prediction features");
-      }
-
-      // Updated to filter for Point geometry type
-      const validPredictionData = predictionFeatures.filter(
-        (feature) =>
-          feature.type === "Feature" &&
-          feature.geometry &&
-          feature.geometry.type === "Point" &&
-          feature.geometry.coordinates
-      );
-
-      setPredictionData(validPredictionData);
-      // console.log("Fetched Prediction Data:", validPredictionData);
+      const data = await fetchAdministrativeData(city, month);
+      setAdministrativeData(data);
     } catch (error) {
-      console.error("Error fetching prediction data:", error.message);
+      console.error("Failed to fetch administrative data:", error);
+      setAdministrativeData([]);
     }
   };
 
-  // Updated to render point data for flood predictions
-  useEffect(() => {
-    if (map.current && predictionData.length > 0 && showPrediction) {
-      // Remove existing prediction layer if it exists
-      if (map.current.getSource("prediction")) {
-        map.current.removeLayer("prediction-circle");
-        map.current.removeLayer("prediction-circle-stroke");
-        map.current.removeSource("prediction");
-      }
-
-      // Add prediction data as a source
-      map.current.addSource("prediction", {
-        type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features: predictionData,
-        },
-      });
-
-      // Add circle layer for points
-      map.current.addLayer({
-        id: "prediction-circle",
-        type: "circle",
-        source: "prediction",
-        paint: {
-          "circle-radius": 10,
-          // Map risk levels using the string values from the data
-          "circle-color": [
-            "match",
-            ["get", "risk_level"],
-            "Rendah",
-            "#FFFF00", // Yellow for low risk
-            "Sedang",
-            "#FFA500", // Orange for medium risk
-            "Rawan",
-            "#FF4500", // OrangeRed for high risk
-            "Bahaya",
-            "#FF0000", // Red for very high risk
-            "Sangat Bahaya",
-            "#8B0000", // DarkRed for extreme risk
-            "#BBBBBB", // Default gray
-          ],
-          "circle-opacity": 0.7,
-        },
-      });
-
-      // Add stroke layer for points
-      map.current.addLayer({
-        id: "prediction-circle-stroke",
-        type: "circle",
-        source: "prediction",
-        paint: {
-          "circle-radius": 11,
-          "circle-color": "#000000",
-          "circle-opacity": 0,
-          "circle-stroke-width": 1,
-          "circle-stroke-color": "#000000",
-        },
-      });
-
-      // Add hover effect
-      map.current.on("mouseenter", "prediction-circle", () => {
-        map.current.getCanvas().style.cursor = "pointer";
-      });
-
-      map.current.on("mouseleave", "prediction-circle", () => {
-        map.current.getCanvas().style.cursor = "";
-      });
-    } else if (map.current && map.current.getSource("prediction")) {
-      // Clean up layers if prediction should not be shown
-      if (map.current.getLayer("prediction-circle")) {
-        map.current.removeLayer("prediction-circle");
-      }
-      if (map.current.getLayer("prediction-circle-stroke")) {
-        map.current.removeLayer("prediction-circle-stroke");
-      }
-      map.current.removeSource("prediction");
-    }
-  }, [predictionData, showPrediction]);
-
-  const fetchPropertyData = async (city) => {
+  const handleFetchPredictionData = async (city, month, year) => {
     try {
-      // Build query parameters
-      const params = new URLSearchParams();
-      if (city) params.append("kota", city);
-      params.append("limit", "10000");
-
-      const url = `${
-        import.meta.env.VITE_HOST_API
-      }/api/public/gis/properti?${params.toString()}`;
-
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP Error! Status: ${response.status}`);
-      }
-
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("Unexpected response content:", text);
-        throw new Error("Response is not JSON");
-      }
-
-      const data = await response.json();
-      const propertyFeatures = data.results?.features;
-
-      if (!Array.isArray(propertyFeatures)) {
-        throw new Error("Expected an array of property features");
-      }
-
-      const validPropertyData = propertyFeatures.filter(
-        (feature) =>
-          feature.type === "Feature" &&
-          feature.geometry &&
-          feature.geometry.type === "Point" &&
-          feature.geometry.coordinates
-      );
-
-      setPropertyData(validPropertyData);
-      // console.log("Fetched Property Data:", validPropertyData);
+      const data = await fetchPredictionData(city, month, year);
+      setPredictionData(data);
     } catch (error) {
-      console.error("Error fetching property data:", error.message);
+      console.error("Failed to fetch prediction data:", error);
+      setPredictionData([]);
     }
   };
+
+  const handleFetchPropertyData = async (city) => {
+    try {
+      const data = await fetchPropertyData(city);
+      setPropertyData(data);
+    } catch (error) {
+      console.error("Failed to fetch property data:", error);
+      setPropertyData([]);
+    }
+  };
+
+  // Helper function to safely remove layers and sources
+  const safelyRemoveLayerAndSource = (layerId, sourceId) => {
+    if (!map.current) return;
+
+    try {
+      // First, remove the specific layer if it exists
+      if (map.current.getLayer(layerId)) {
+        map.current.removeLayer(layerId);
+      }
+
+      // Check if source exists and if there are any other layers still using it
+      if (map.current.getSource(sourceId)) {
+        const style = map.current.getStyle();
+        const layersUsingSource = style.layers.filter(
+          (layer) => layer.source === sourceId
+        );
+
+        // Only remove the source if no layers are using it
+        if (layersUsingSource.length === 0) {
+          map.current.removeSource(sourceId);
+        }
+      }
+    } catch (error) {
+      console.error(
+        `Error removing layer ${layerId} or source ${sourceId}:`,
+        error
+      );
+    }
+  };
+
+  // Initial map setup
+  useEffect(() => {
+    // Cleanup existing map if it exists
+    if (map.current) {
+      try {
+        // Remove all event listeners first
+        map.current.off();
+        // Then remove the map
+        if (typeof map.current.remove === "function") {
+          map.current.remove();
+        }
+      } catch (error) {
+        console.warn("Error during map cleanup:", error);
+      } finally {
+        map.current = null;
+      }
+    }
+
+    // Only create new map if container exists
+    if (!mapContainer.current) return;
+
+    try {
+      map.current = new maplibregl.Map({
+        container: mapContainer.current,
+        style: mapStyles[mapStyle],
+        center: [107.6098, -6.9149],
+        zoom: 15.5,
+        pitch: is3DMode ? 60 : 0,
+      });
+
+      map.current.on("load", () => {
+        console.log("map loaded");
+
+        // Add scale control
+        try {
+          map.current.addControl(new maplibregl.ScaleControl(), "bottom-left");
+        } catch (error) {
+          console.warn("Error adding scale control:", error);
+        }
+
+        // Add click event for all layers
+        map.current.on("click", (e) => {
+          // Close info panel if it's already open
+          if (showInfoPanel) {
+            setShowInfoPanel(false);
+            setSelectedFeature(null);
+            return;
+          }
+
+          try {
+            // Updated to include prediction-circle layer
+            const features = map.current.queryRenderedFeatures(e.point, {
+              layers: [
+                "river-lines",
+                "administrative-boundaries-fill",
+                "prediction-circle",
+                "property-points",
+              ].filter((layer) => map.current.getLayer(layer)),
+            });
+
+            if (features.length > 0) {
+              const feature = features[0];
+              setSelectedFeature(feature);
+              setShowInfoPanel(true);
+            }
+          } catch (error) {
+            console.warn("Error querying features:", error);
+          }
+        });
+      });
+
+      map.current.on("error", (e) => {
+        console.error("Map error:", e.error);
+      });
+    } catch (error) {
+      console.error("Error creating map:", error);
+    }
+
+    // Cleanup function
+    return () => {
+      if (map.current) {
+        try {
+          // Remove all event listeners
+          map.current.off();
+          // Remove the map
+          if (typeof map.current.remove === "function") {
+            map.current.remove();
+          }
+        } catch (error) {
+          console.warn("Error during map cleanup in useEffect return:", error);
+        } finally {
+          map.current = null;
+        }
+      }
+    };
+  }, [mapStyle, is3DMode]); // Dependencies for map recreation
 
   // Initial data fetch
   useEffect(() => {
-    fetchAdministrativeData(
+    handleFetchAdministrativeData(
       filters.administrative.city,
       filters.administrative.month
     );
-    fetchPredictionData(
+    handleFetchPredictionData(
       filters.prediction.city,
       filters.prediction.month,
       filters.prediction.year
     );
-    fetchPropertyData(filters.property.city);
-    fetchRiverData(filters.administrative.city);
+    handleFetchPropertyData(filters.property.city);
+    handleFetchRiverData(filters.administrative.city);
   }, []);
 
-  // Add this effect to render property points on the map
+  // Handle river data rendering
   useEffect(() => {
-    if (map.current && propertyData.length > 0 && showProperties) {
-      // Remove existing property layer if it exists
-      if (map.current.getSource("properties")) {
-        map.current.removeLayer("property-points");
-        map.current.removeLayer("property-labels");
-        map.current.removeSource("properties");
-      }
+    if (!map.current || !map.current.loaded()) return;
 
-      // Add property data as a source
-      map.current.addSource("properties", {
-        type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features: propertyData,
-        },
-      });
+    if (riverData.length > 0 && showRivers) {
+      // Remove existing river layer if it exists
+      safelyRemoveLayerAndSource("river-lines", "rivers");
 
-      // Add circle layer for property points
-      map.current.addLayer({
-        id: "property-points",
-        type: "circle",
-        source: "properties",
-        paint: {
-          "circle-radius": 8,
-          "circle-color": "#4CAF50",
-          "circle-opacity": 0.8,
-          "circle-stroke-width": 1,
-          "circle-stroke-color": "#FFFFFF",
-        },
-      });
-
-      // Add text labels for properties
-      map.current.addLayer({
-        id: "property-labels",
-        type: "symbol",
-        source: "properties",
-        layout: {
-          "text-field": ["get", "kategori_properti"],
-          "text-font": ["Open Sans Regular"],
-          "text-size": 11,
-          "text-offset": [0, 1.5],
-          "text-anchor": "top",
-        },
-        paint: {
-          "text-color": "#333333",
-          "text-halo-color": "#FFFFFF",
-          "text-halo-width": 1,
-        },
-      });
-
-      // Add hover effect
-      map.current.on("mouseenter", "property-points", () => {
-        map.current.getCanvas().style.cursor = "pointer";
-      });
-
-      map.current.on("mouseleave", "property-points", () => {
-        map.current.getCanvas().style.cursor = "";
-      });
-
-      // Add click event for showing property info
-      map.current.on("click", "property-points", (e) => {
-        if (e.features && e.features.length > 0) {
-          const feature = e.features[0];
-          setSelectedFeature(feature);
-          setShowInfoPanel(true);
-        }
-      });
-    } else if (map.current && map.current.getSource("properties")) {
-      // Remove property layers if properties are hidden
-      map.current.removeLayer("property-points");
-      map.current.removeLayer("property-labels");
-      map.current.removeSource("properties");
-    }
-  }, [propertyData, showProperties]);
-
-  useEffect(() => {
-    if (map.current) {
-      map.current.remove(); // bersihkan peta lama
-      map.current = null;
-    }
-
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: mapStyles[mapStyle],
-      center: [107.6098, -6.9149],
-      zoom: 15.5,
-      pitch: is3DMode ? 60 : 0,
-    });
-
-    map.current.on("load", () => {
-      console.log("map loaded");
-      // Add scale control
-      map.current.addControl(new maplibregl.ScaleControl(), "bottom-left");
-
-      // Add click event for all layers
-      map.current.on("click", (e) => {
-        // Close info panel if it's already open
-        if (showInfoPanel) {
-          setShowInfoPanel(false);
-          setSelectedFeature(null);
-          return;
-        }
-
-        // Updated to include prediction-circle layer
-        const features = map.current.queryRenderedFeatures(e.point, {
-          layers: [
-            "river-lines",
-            "administrative-boundaries-fill",
-            "prediction-circle",
-          ].filter((layer) => map.current.getLayer(layer)),
+      try {
+        // Add river data as a source
+        map.current.addSource("rivers", {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: riverData,
+          },
         });
 
-        if (features.length > 0) {
-          const feature = features[0];
-          // console.log("Clicked feature:", feature);
-          setSelectedFeature(feature);
-          setShowInfoPanel(true);
-        }
-      });
-    });
+        // Add river lines layer
+        map.current.addLayer({
+          id: "river-lines",
+          type: "line",
+          source: "rivers",
+          paint: {
+            "line-color": "#FF0000",
+            "line-width": 3,
+            "line-opacity": 0.7,
+          },
+        });
 
-    return () => map.current?.remove();
-  }, []);
+        // Add hover effect for better UX
+        map.current.on("mouseenter", "river-lines", () => {
+          if (map.current) {
+            map.current.getCanvas().style.cursor = "pointer";
+          }
+        });
 
-  // Handle river data rendering with click interaction
-  useEffect(() => {
-    if (map.current && riverData.length > 0 && showRivers) {
-      // Remove existing river layer if it exists
-      if (map.current.getSource("rivers")) {
-        map.current.removeLayer("river-lines");
-        map.current.removeSource("rivers");
+        map.current.on("mouseleave", "river-lines", () => {
+          if (map.current) {
+            map.current.getCanvas().style.cursor = "";
+          }
+        });
+      } catch (error) {
+        console.error("Error adding river layers:", error);
       }
-
-      // Add river data as a source
-      map.current.addSource("rivers", {
-        type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features: riverData,
-        },
-      });
-
-      // Add river lines layer
-      map.current.addLayer({
-        id: "river-lines",
-        type: "line",
-        source: "rivers",
-        paint: {
-          "line-color": "#FF0000",
-          "line-width": 3,
-          "line-opacity": 0.7,
-        },
-      });
-
-      // Add hover effect for better UX
-      map.current.on("mouseenter", "river-lines", () => {
-        map.current.getCanvas().style.cursor = "pointer";
-      });
-
-      map.current.on("mouseleave", "river-lines", () => {
-        map.current.getCanvas().style.cursor = "";
-      });
-    } else if (map.current && map.current.getSource("rivers")) {
+    } else {
       // Remove river layer if rivers are hidden
-      map.current.removeLayer("river-lines");
-      map.current.removeSource("rivers");
+      safelyRemoveLayerAndSource("river-lines", "rivers");
     }
   }, [riverData, showRivers]);
 
   // Handle administrative boundaries with click interaction
   useEffect(() => {
-    if (
-      map.current &&
-      administrativeData.length > 0 &&
-      showAdministrativeBoundaries
-    ) {
+    if (!map.current || !map.current.loaded()) return;
+
+    if (administrativeData.length > 0 && showAdministrativeBoundaries) {
       // Remove existing administrative boundaries layer if it exists
-      if (map.current.getSource("administrative-boundaries")) {
-        map.current.removeLayer("administrative-boundaries-fill");
-        map.current.removeLayer("administrative-boundaries-line");
-        map.current.removeSource("administrative-boundaries");
+      safelyRemoveLayerAndSource(
+        "administrative-boundaries-fill",
+        "administrative-boundaries"
+      );
+      safelyRemoveLayerAndSource(
+        "administrative-boundaries-line",
+        "administrative-boundaries"
+      );
+
+      try {
+        // Add administrative boundaries as a source
+        map.current.addSource("administrative-boundaries", {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: administrativeData,
+          },
+        });
+
+        // Add administrative boundaries fill layer
+        map.current.addLayer({
+          id: "administrative-boundaries-fill",
+          type: "fill",
+          source: "administrative-boundaries",
+          paint: {
+            "fill-color": "#FF0000",
+            "fill-opacity": 0.2,
+          },
+        });
+
+        // Add administrative boundaries line layer
+        map.current.addLayer({
+          id: "administrative-boundaries-line",
+          type: "line",
+          source: "administrative-boundaries",
+          paint: {
+            "line-color": "#4169E1",
+            "line-width": 2,
+            "line-opacity": 0.7,
+          },
+        });
+
+        // Add hover effect
+        map.current.on("mouseenter", "administrative-boundaries-fill", () => {
+          if (map.current) {
+            map.current.getCanvas().style.cursor = "pointer";
+          }
+        });
+
+        map.current.on("mouseleave", "administrative-boundaries-fill", () => {
+          if (map.current) {
+            map.current.getCanvas().style.cursor = "";
+          }
+        });
+      } catch (error) {
+        console.error("Error adding administrative boundary layers:", error);
       }
-
-      // Add administrative boundaries as a source
-      map.current.addSource("administrative-boundaries", {
-        type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features: administrativeData,
-        },
-      });
-
-      // Add administrative boundaries fill layer
-      map.current.addLayer({
-        id: "administrative-boundaries-fill",
-        type: "fill",
-        source: "administrative-boundaries",
-        paint: {
-          "fill-color": "#FF0000",
-          "fill-opacity": 0.2,
-        },
-      });
-
-      // Add administrative boundaries line layer
-      map.current.addLayer({
-        id: "administrative-boundaries-line",
-        type: "line",
-        source: "administrative-boundaries",
-        paint: {
-          "line-color": "#4169E1",
-          "line-width": 2,
-          "line-opacity": 0.7,
-        },
-      });
-
-      // Add hover effect
-      map.current.on("mouseenter", "administrative-boundaries-fill", () => {
-        map.current.getCanvas().style.cursor = "pointer";
-      });
-
-      map.current.on("mouseleave", "administrative-boundaries-fill", () => {
-        map.current.getCanvas().style.cursor = "";
-      });
-    } else if (
-      map.current &&
-      map.current.getSource("administrative-boundaries")
-    ) {
+    } else {
       // Remove administrative boundaries layers if hidden
-      map.current.removeLayer("administrative-boundaries-fill");
-      map.current.removeLayer("administrative-boundaries-line");
-      map.current.removeSource("administrative-boundaries");
+      safelyRemoveLayerAndSource(
+        "administrative-boundaries-fill",
+        "administrative-boundaries"
+      );
+      safelyRemoveLayerAndSource(
+        "administrative-boundaries-line",
+        "administrative-boundaries"
+      );
     }
   }, [administrativeData, showAdministrativeBoundaries]);
 
   // Handle prediction layer with click interaction for points
   useEffect(() => {
-    if (map.current && predictionData.length > 0 && showPrediction) {
+    if (!map.current || !map.current.loaded()) return;
+
+    if (predictionData.length > 0 && showPrediction) {
       // Remove existing prediction layer if it exists
-      if (map.current.getSource("prediction")) {
-        if (map.current.getLayer("prediction-circle")) {
-          map.current.removeLayer("prediction-circle");
-        }
-        if (map.current.getLayer("prediction-circle-stroke")) {
-          map.current.removeLayer("prediction-circle-stroke");
-        }
-        map.current.removeSource("prediction");
+      safelyRemoveLayerAndSource("prediction-circle", "prediction");
+      safelyRemoveLayerAndSource("prediction-circle-stroke", "prediction");
+
+      try {
+        // Add prediction data as a source
+        map.current.addSource("prediction", {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: predictionData,
+          },
+        });
+
+        // Add circle layer for points
+        map.current.addLayer({
+          id: "prediction-circle",
+          type: "circle",
+          source: "prediction",
+          paint: {
+            "circle-radius": 10,
+            // Map risk levels using the string values from the data
+            "circle-color": [
+              "match",
+              ["get", "risk_level"],
+              "Rendah",
+              "#FFFF00", // Yellow for low risk
+              "Sedang",
+              "#FFA500", // Orange for medium risk
+              "Rawan",
+              "#FF4500", // OrangeRed for high risk
+              "Bahaya",
+              "#FF0000", // Red for very high risk
+              "Sangat Bahaya",
+              "#8B0000", // DarkRed for extreme risk
+              "#BBBBBB", // Default gray
+            ],
+            "circle-opacity": 0.7,
+          },
+        });
+
+        // Add stroke layer for points
+        map.current.addLayer({
+          id: "prediction-circle-stroke",
+          type: "circle",
+          source: "prediction",
+          paint: {
+            "circle-radius": 11,
+            "circle-color": "#000000",
+            "circle-opacity": 0,
+            "circle-stroke-width": 1,
+            "circle-stroke-color": "#000000",
+          },
+        });
+
+        // Add hover effect
+        map.current.on("mouseenter", "prediction-circle", () => {
+          if (map.current) {
+            map.current.getCanvas().style.cursor = "pointer";
+          }
+        });
+
+        map.current.on("mouseleave", "prediction-circle", () => {
+          if (map.current) {
+            map.current.getCanvas().style.cursor = "";
+          }
+        });
+
+        // Add click event for showing popup with details
+        map.current.on("click", "prediction-circle", (e) => {
+          if (e.features && e.features.length > 0) {
+            const feature = e.features[0];
+            setSelectedFeature(feature);
+            setShowInfoPanel(true);
+          }
+        });
+      } catch (error) {
+        console.error("Error adding prediction layers:", error);
       }
-
-      // Add prediction data as a source
-      map.current.addSource("prediction", {
-        type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features: predictionData,
-        },
-      });
-
-      // Add circle layer for points
-      map.current.addLayer({
-        id: "prediction-circle",
-        type: "circle",
-        source: "prediction",
-        paint: {
-          "circle-radius": 10,
-          // Map risk levels using the string values from the data
-          "circle-color": [
-            "match",
-            ["get", "risk_level"],
-            "Rendah",
-            "#FFFF00", // Yellow for low risk
-            "Sedang",
-            "#FFA500", // Orange for medium risk
-            "Rawan",
-            "#FF4500", // OrangeRed for high risk
-            "Bahaya",
-            "#FF0000", // Red for very high risk
-            "Sangat Bahaya",
-            "#8B0000", // DarkRed for extreme risk
-            "#BBBBBB", // Default gray
-          ],
-          "circle-opacity": 0.7,
-        },
-      });
-
-      // Add stroke layer for points
-      map.current.addLayer({
-        id: "prediction-circle-stroke",
-        type: "circle",
-        source: "prediction",
-        paint: {
-          "circle-radius": 11,
-          "circle-color": "#000000",
-          "circle-opacity": 0,
-          "circle-stroke-width": 1,
-          "circle-stroke-color": "#000000",
-        },
-      });
-
-      // Add hover effect
-      map.current.on("mouseenter", "prediction-circle", () => {
-        map.current.getCanvas().style.cursor = "pointer";
-      });
-
-      map.current.on("mouseleave", "prediction-circle", () => {
-        map.current.getCanvas().style.cursor = "";
-      });
-
-      // Add click event for showing popup with details
-      map.current.on("click", "prediction-circle", (e) => {
-        if (e.features && e.features.length > 0) {
-          const feature = e.features[0];
-          setSelectedFeature(feature);
-          setShowInfoPanel(true);
-        }
-      });
-    } else if (map.current && map.current.getSource("prediction")) {
+    } else {
       // Clean up layers
-      if (map.current.getLayer("prediction-circle")) {
-        map.current.removeLayer("prediction-circle");
-      }
-      if (map.current.getLayer("prediction-circle-stroke")) {
-        map.current.removeLayer("prediction-circle-stroke");
-      }
-      map.current.removeSource("prediction");
+      safelyRemoveLayerAndSource("prediction-circle", "prediction");
+      safelyRemoveLayerAndSource("prediction-circle-stroke", "prediction");
     }
   }, [predictionData, showPrediction]);
 
-  // Function to format feature properties for display - updated for prediction-circle
+  // Add effect to render property points on the map
+  useEffect(() => {
+    if (!map.current || !map.current.loaded()) return;
+
+    if (propertyData.length > 0 && showProperties) {
+      // Remove existing property layer if it exists
+      safelyRemoveLayerAndSource("property-points", "properties");
+      safelyRemoveLayerAndSource("property-labels", "properties");
+
+      try {
+        // Add property data as a source
+        map.current.addSource("properties", {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: propertyData,
+          },
+        });
+
+        // Add circle layer for property points
+        map.current.addLayer({
+          id: "property-points",
+          type: "circle",
+          source: "properties",
+          paint: {
+            "circle-radius": 8,
+            "circle-color": "#4CAF50",
+            "circle-opacity": 0.8,
+            "circle-stroke-width": 1,
+            "circle-stroke-color": "#FFFFFF",
+          },
+        });
+
+        // Add text labels for properties
+        map.current.addLayer({
+          id: "property-labels",
+          type: "symbol",
+          source: "properties",
+          layout: {
+            "text-field": ["get", "kategori_properti"],
+            "text-font": ["Open Sans Regular"],
+            "text-size": 11,
+            "text-offset": [0, 1.5],
+            "text-anchor": "top",
+          },
+          paint: {
+            "text-color": "#333333",
+            "text-halo-color": "#FFFFFF",
+            "text-halo-width": 1,
+          },
+        });
+
+        // Add hover effect
+        map.current.on("mouseenter", "property-points", () => {
+          if (map.current) {
+            map.current.getCanvas().style.cursor = "pointer";
+          }
+        });
+
+        map.current.on("mouseleave", "property-points", () => {
+          if (map.current) {
+            map.current.getCanvas().style.cursor = "";
+          }
+        });
+
+        // Add click event for showing property info
+        map.current.on("click", "property-points", (e) => {
+          if (e.features && e.features.length > 0) {
+            const feature = e.features[0];
+            setSelectedFeature(feature);
+            setShowInfoPanel(true);
+          }
+        });
+      } catch (error) {
+        console.error("Error adding property layers:", error);
+      }
+    } else {
+      // Remove property layers if properties are hidden
+      safelyRemoveLayerAndSource("property-points", "properties");
+      safelyRemoveLayerAndSource("property-labels", "properties");
+    }
+  }, [propertyData, showProperties]);
+
+  // Function to format feature properties for display
   const formatFeatureInfo = (feature) => {
     if (!feature) return null;
 
@@ -878,7 +618,6 @@ function Maps() {
           ],
         };
 
-      // Updated for prediction-circle to match point data structure
       case "prediction-circle": {
         // Map Indonesian risk levels to English descriptions
         const riskLevelMapping = {
@@ -928,7 +667,6 @@ function Maps() {
       }
 
       case "property-points": {
-        const properties = feature.properties;
         const formattedPrice = new Intl.NumberFormat("id-ID", {
           style: "currency",
           currency: "IDR",
@@ -994,20 +732,20 @@ function Maps() {
   // Handle filter submit
   const handleFilterSubmit = (section) => {
     if (section === "administrative") {
-      fetchAdministrativeData(
+      handleFetchAdministrativeData(
         filters.administrative.city,
         filters.administrative.month
       );
     } else if (section === "prediction") {
-      fetchPredictionData(
+      handleFetchPredictionData(
         filters.prediction.city,
         filters.prediction.month,
         filters.prediction.year
       );
     } else if (section === "property") {
-      fetchPropertyData(filters.property.city);
+      handleFetchPropertyData(filters.property.city);
     } else if (section === "river") {
-      fetchRiverData(filters.river.city); // Add this condition
+      handleFetchRiverData(filters.river.city);
     }
   };
 
@@ -1027,13 +765,13 @@ function Maps() {
 
     // Fetch data with cleared filters
     if (section === "administrative") {
-      fetchAdministrativeData("Kota Bandung", "");
+      handleFetchAdministrativeData("Kota Bandung", "");
     } else if (section === "prediction") {
-      fetchPredictionData("", "", "");
+      handleFetchPredictionData("", "", "");
     } else if (section === "property") {
-      fetchPropertyData("");
+      handleFetchPropertyData("");
     } else if (section === "river") {
-      fetchRiverData("");
+      handleFetchRiverData("");
     }
   };
 
@@ -1086,73 +824,13 @@ function Maps() {
                 ))}
               </select>
             </div>
-          </div>
-          <div className="mt-3 flex space-x-2">
-            <button
-              onClick={() => handleFilterSubmit("administrative")}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-            >
-              Apply Filter
-            </button>
-            <button
-              onClick={() => clearFilters("administrative")}
-              className="inline-flex items-center px-4 py-2 border border-green-300 text-sm font-medium rounded-md shadow-sm text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-            >
-              Clear
-            </button>
-          </div>
-        </div>
-        {/* Prediction Filter */}
-        <div className="bg-transparent p-3 rounded-xl shadow-md">
-          <h3 className="font-bold text-gray-800 mb-2">Prediction Filters</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                City
-              </label>
-              <select
-                value={filters.prediction.city}
-                onChange={(e) =>
-                  handleFilterChange("prediction", "city", e.target.value)
-                }
-                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-              >
-                <option value="">All Cities</option>
-                {cityOptions.map((city) => (
-                  <option key={city} value={city}>
-                    {city}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Month
-              </label>
-              <select
-                value={filters.prediction.month}
-                onChange={(e) =>
-                  handleFilterChange("prediction", "month", e.target.value)
-                }
-                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-              >
-                <option value="">All Months</option>
-                {monthOptions.map((month) => (
-                  <option key={month} value={month}>
-                    {new Date(2024, month - 1, 1).toLocaleString("default", {
-                      month: "long",
-                    })}
-                  </option>
-                ))}
-              </select>
-            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Year
               </label>
               <select
                 value="2025"
-                disabled // mencegah user mengubah
+                disabled
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-white/30 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-transparent backdrop-blur-md cursor-not-allowed text-black placeholder-black/70"
               >
                 {yearOptions.map((year) => (
@@ -1267,18 +945,16 @@ function Maps() {
 
   // Handle 2D/3D toggle
   useEffect(() => {
-    if (map.current) {
-      map.current.setPitch(is3DMode ? 60 : 0);
+    if (map.current && map.current.loaded()) {
+      try {
+        map.current.setPitch(is3DMode ? 60 : 0);
+      } catch (error) {
+        console.warn("Error setting pitch:", error);
+      }
     }
   }, [is3DMode]);
 
-  // Handle map style changes
-  useEffect(() => {
-    if (map.current && map.current.loaded()) {
-      map.current.setStyle(mapStyles[mapStyle]);
-    }
-  }, [mapStyle]);
-
+  // Handle map style changes - removed separate effect since it's handled in main map effect
   useEffect(() => {
     const handleClickOutside = () => {
       if (mapStyleMenuOpen) {
@@ -1845,25 +1521,6 @@ function Maps() {
                 "0 25px 45px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.2) inset",
             }}
           >
-            {/* Custom Scrollbar CSS */}
-            <style jsx>{`
-              .custom-scroll::-webkit-scrollbar {
-                width: 6px;
-              }
-              .custom-scroll::-webkit-scrollbar-track {
-                background: #f1f5f9;
-                border-radius: 3px;
-              }
-              .custom-scroll::-webkit-scrollbar-thumb {
-                background: #cbd5e1;
-                border-radius: 3px;
-                transition: background 0.2s ease;
-              }
-              .custom-scroll::-webkit-scrollbar-thumb:hover {
-                background: #94a3b8;
-              }
-            `}</style>
-
             {/* Header */}
             <div
               className="px-4 py-3 md:px-6 md:py-4 border-b border-white/20 backdrop-blur-sm"
