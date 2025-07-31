@@ -180,7 +180,7 @@ function Maps() {
         container: mapContainer.current,
         style: mapStyles[mapStyle],
         center: [107.6098, -6.9149],
-        zoom: 15.5,
+        zoom: 12, // untuk jarak tampilan ~50m
         pitch: is3DMode ? 60 : 0,
       });
 
@@ -824,13 +824,73 @@ function Maps() {
                 ))}
               </select>
             </div>
+          </div>
+          <div className="mt-3 flex space-x-2">
+            <button
+              onClick={() => handleFilterSubmit("administrative")}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            >
+              Apply Filter
+            </button>
+            <button
+              onClick={() => clearFilters("administrative")}
+              className="inline-flex items-center px-4 py-2 border border-green-300 text-sm font-medium rounded-md shadow-sm text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+        {/* Prediction Filter */}
+        <div className="bg-transparent p-3 rounded-xl shadow-md">
+          <h3 className="font-bold text-gray-800 mb-2">Prediction Filters</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                City
+              </label>
+              <select
+                value={filters.prediction.city}
+                onChange={(e) =>
+                  handleFilterChange("prediction", "city", e.target.value)
+                }
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              >
+                <option value="">All Cities</option>
+                {cityOptions.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Month
+              </label>
+              <select
+                value={filters.prediction.month}
+                onChange={(e) =>
+                  handleFilterChange("prediction", "month", e.target.value)
+                }
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              >
+                <option value="">All Months</option>
+                {monthOptions.map((month) => (
+                  <option key={month} value={month}>
+                    {new Date(2024, month - 1, 1).toLocaleString("default", {
+                      month: "long",
+                    })}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Year
               </label>
               <select
                 value="2025"
-                disabled
+                disabled // mencegah user mengubah
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-white/30 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-transparent backdrop-blur-md cursor-not-allowed text-black placeholder-black/70"
               >
                 {yearOptions.map((year) => (
