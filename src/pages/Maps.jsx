@@ -77,10 +77,10 @@ function Maps() {
     light: `https://basemap.mapid.io/styles/light/style.json?key=${MAP_SERVICE_KEY}`,
   };
   const mapStyleImages = {
-    dark: "Dark.png",
+    street: "Street.png",
     light: "Light.png",
     satellite: "Satellite.png",
-    street: "Street.png",
+    dark: "Dark.png",
   };
 
   // API wrapper functions to handle state updates
@@ -181,7 +181,7 @@ function Maps() {
         style: mapStyles[mapStyle],
         center: [107.6098, -6.9149],
         zoom: 12, // untuk jarak tampilan ~50m
-        pitch: is3DMode ? 60 : 0,
+        pitch: is3DMode ? 75 : 0, // nilai yang lebih optimal untuk 3D
       });
 
       map.current.on("load", () => {
@@ -333,23 +333,51 @@ function Maps() {
       );
 
       try {
+        // Generate colors for each region
+        const colorPalette = [
+          "#FF6B6B",
+          "#4ECDC4",
+          "#45B7D1",
+          "#96CEB4",
+          "#FFEAA7",
+          "#DDA0DD",
+          "#98D8C8",
+          "#F7DC6F",
+          "#BB8FCE",
+          "#85C1E9",
+          "#F8C471",
+          "#82E0AA",
+          "#AED6F1",
+          "#E8DAEF",
+          "#FADBD8",
+        ];
+
+        // Process data to add colors
+        const processedData = administrativeData.map((feature, index) => ({
+          ...feature,
+          properties: {
+            ...feature.properties,
+            fillColor: colorPalette[index % colorPalette.length],
+          },
+        }));
+
         // Add administrative boundaries as a source
         map.current.addSource("administrative-boundaries", {
           type: "geojson",
           data: {
             type: "FeatureCollection",
-            features: administrativeData,
+            features: processedData,
           },
         });
 
-        // Add administrative boundaries fill layer
+        // Add administrative boundaries fill layer with different colors
         map.current.addLayer({
           id: "administrative-boundaries-fill",
           type: "fill",
           source: "administrative-boundaries",
           paint: {
-            "fill-color": "#FF0000",
-            "fill-opacity": 0.2,
+            "fill-color": ["get", "fillColor"],
+            "fill-opacity": 0.3,
           },
         });
 
@@ -359,9 +387,9 @@ function Maps() {
           type: "line",
           source: "administrative-boundaries",
           paint: {
-            "line-color": "#4169E1",
-            "line-width": 2,
-            "line-opacity": 0.7,
+            "line-color": "#FFFFFF",
+            "line-width": 1.5,
+            "line-opacity": 0.8,
           },
         });
 
@@ -392,7 +420,6 @@ function Maps() {
       );
     }
   }, [administrativeData, showAdministrativeBoundaries]);
-
   // Handle prediction layer with click interaction for points
   useEffect(() => {
     if (!map.current || !map.current.loaded()) return;
