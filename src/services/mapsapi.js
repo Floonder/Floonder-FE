@@ -134,9 +134,10 @@ export const fetchPredictionData = async (city, month, year) => {
     if (year) params.append("year", year);
     params.append("limit", "10000");
 
+    // Ganti endpoint dari flood-point ke flood-area
     const url = `${
       import.meta.env.VITE_HOST_API
-    }/api/public/gis/flood-point?${params.toString()}`;
+    }/api/public/gis/flood-area?${params.toString()}`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -164,12 +165,12 @@ export const fetchPredictionData = async (city, month, year) => {
       throw new Error("Expected an array of prediction features");
     }
 
-    // Filter for Point geometry type
+    // Filter untuk MultiPolygon geometry type (bukan Point lagi)
     const validPredictionData = predictionFeatures.filter(
       (feature) =>
         feature.type === "Feature" &&
         feature.geometry &&
-        feature.geometry.type === "Point" &&
+        feature.geometry.type === "MultiPolygon" &&
         feature.geometry.coordinates
     );
 
@@ -181,11 +182,11 @@ export const fetchPredictionData = async (city, month, year) => {
 };
 
 /**
- * Fetch property data from the API
+ * Fetch lake data from the API
  * @param {string} city - City filter parameter
- * @returns {Promise<Array>} Array of valid property features
+ * @returns {Promise<Array>} Array of valid lake features
  */
-export const fetchPropertyData = async (city) => {
+export const fetchLakeData = async (city) => {
   try {
     // Build query parameters
     const params = new URLSearchParams();
@@ -194,7 +195,7 @@ export const fetchPropertyData = async (city) => {
 
     const url = `${
       import.meta.env.VITE_HOST_API
-    }/api/public/gis/properti?${params.toString()}`;
+    }/api/public/gis/danau?${params.toString()}`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -216,23 +217,23 @@ export const fetchPropertyData = async (city) => {
     }
 
     const data = await response.json();
-    const propertyFeatures = data.results?.features;
+    const lakeFeatures = data.results?.features;
 
-    if (!Array.isArray(propertyFeatures)) {
-      throw new Error("Expected an array of property features");
+    if (!Array.isArray(lakeFeatures)) {
+      throw new Error("Expected an array of lake features");
     }
 
-    const validPropertyData = propertyFeatures.filter(
+    const validLakeData = lakeFeatures.filter(
       (feature) =>
         feature.type === "Feature" &&
         feature.geometry &&
-        feature.geometry.type === "Point" &&
+        feature.geometry.type === "MultiPolygon" &&
         feature.geometry.coordinates
     );
 
-    return validPropertyData;
+    return validLakeData;
   } catch (error) {
-    console.error("Error fetching property data:", error.message);
+    console.error("Error fetching lake data:", error.message);
     throw error;
   }
 };

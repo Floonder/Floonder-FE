@@ -26,7 +26,7 @@ import {
   fetchRiverData,
   fetchAdministrativeData,
   fetchPredictionData,
-  fetchPropertyData,
+  fetchLakeData,
 } from "../services/mapsapi.js";
 
 function Maps() {
@@ -41,18 +41,23 @@ function Maps() {
     useState(false);
   const [predictionData, setPredictionData] = useState([]);
   const [showPrediction, setShowPrediction] = useState(false);
-  const [propertyData, setPropertyData] = useState([]);
-  const [showProperties, setShowProperties] = useState(false);
+  const [lakeData, setLakeData] = useState([]);
+  const [showLakes, setShowLakes] = useState(false);
   const [selectedFeature, setSelectedFeature] = useState(null);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [mapStyleMenuOpen, setMapStyleMenuOpen] = useState(false);
 
   // States for filters
+  // States for filters
   const [filters, setFilters] = useState({
     administrative: { city: "Kota Bandung", month: new Date().getMonth() + 1 },
-    prediction: { city: "", month: new Date().getMonth() + 1, year: "" },
-    property: { city: "" },
+    prediction: {
+      city: "Kota Bandung", // ← tambahkan default
+      month: new Date().getMonth() + 1,
+      year: "2025", // ← tambahkan default year
+    },
+    lake: { city: "" },
     river: { city: "" },
   });
 
@@ -114,13 +119,13 @@ function Maps() {
     }
   };
 
-  const handleFetchPropertyData = async (city) => {
+  const handleFetchLakeData = async (city) => {
     try {
-      const data = await fetchPropertyData(city);
-      setPropertyData(data);
+      const data = await fetchLakeData(city);
+      setLakeData(data);
     } catch (error) {
-      console.error("Failed to fetch property data:", error);
-      setPropertyData([]);
+      console.error("Failed to fetch lake data:", error);
+      setLakeData([]);
     }
   };
 
@@ -209,8 +214,8 @@ function Maps() {
               layers: [
                 "river-lines",
                 "administrative-boundaries-fill",
-                "prediction-circle",
-                "property-points",
+                "prediction-fill",
+                "lake-polygons",
               ].filter((layer) => map.current.getLayer(layer)),
             });
 
@@ -252,17 +257,18 @@ function Maps() {
   }, [mapStyle, is3DMode]); // Dependencies for map recreation
 
   // Initial data fetch
+  // Initial data fetch
   useEffect(() => {
     handleFetchAdministrativeData(
       filters.administrative.city,
       filters.administrative.month
     );
     handleFetchPredictionData(
-      filters.prediction.city,
+      filters.prediction.city, // ← sekarang akan pakai "Kota Bandung"
       filters.prediction.month,
-      filters.prediction.year
+      filters.prediction.year // ← sekarang akan pakai "2025"
     );
-    handleFetchPropertyData(filters.property.city);
+    handleFetchLakeData(filters.lake.city);
     handleFetchRiverData(filters.administrative.city);
   }, []);
 
@@ -420,94 +426,174 @@ function Maps() {
       );
     }
   }, [administrativeData, showAdministrativeBoundaries]);
-  // Handle prediction layer with click interaction for points
+
+  // Fungsi untuk convert Web Mercator ke WGS84
+  const webMercatorToWGS84 = (x, y) => {
+    const lon = (x * 180) / 20037508.34;
+    const lat =
+      (Math.atan(Math.exp((y * Math.PI) / 20037508.34)) * 360) / Math.PI - 90;
+    return [lon, lat];
+  };
+
+  // Transform semua koordinat dalam GeoJSON
+  const transformCoordinates = (coords) => {
+    if (typeof coords[0] === "number") {
+      return webMercatorToWGS84(coords[0], coords[1]);
+    }
+    return coords.map((coord) => transformCoordinates(coord));
+  };
+
+  // Transform feature GeoJSON
+  const transformFeature = (feature) => ({
+    ...feature,
+    geometry: {
+      ...feature.geometry,
+      coordinates: transformCoordinates(feature.geometry.coordinates),
+    },
+  });
+
+  // Handle prediction layer dengan click interaction untuk polygons
   useEffect(() => {
     if (!map.current || !map.current.loaded()) return;
 
+    console.log("Prediction Data:", predictionData);
+    console.log("Show Prediction:", showPrediction);
+
     if (predictionData.length > 0 && showPrediction) {
-      // Remove existing prediction layer if it exists
-      safelyRemoveLayerAndSource("prediction-circle", "prediction");
-      safelyRemoveLayerAndSource("prediction-circle-stroke", "prediction");
+      // Remove existing prediction layers if they exist
+      safelyRemoveLayerAndSource("prediction-fill", "prediction");
+      safelyRemoveLayerAndSource("prediction-line", "prediction");
 
       try {
+        // Transform semua features dari EPSG:3857 ke EPSG:4326
+        const transformedData = predictionData.map(transformFeature);
+
+        console.log(
+          "Original coords sample:",
+          predictionData[0]?.geometry?.coordinates?.[0]?.[0]?.[0]
+        );
+        console.log(
+          "Transformed coords sample:",
+          transformedData[0]?.geometry?.coordinates?.[0]?.[0]?.[0]
+        );
+        console.log("Total features transformed:", transformedData.length);
+
         // Add prediction data as a source
         map.current.addSource("prediction", {
           type: "geojson",
           data: {
             type: "FeatureCollection",
-            features: predictionData,
+            features: transformedData,
           },
         });
 
-        // Add circle layer for points
+        // Add fill layer for polygons
         map.current.addLayer({
-          id: "prediction-circle",
-          type: "circle",
+          id: "prediction-fill",
+          type: "fill",
           source: "prediction",
           paint: {
-            "circle-radius": 10,
-            // Map risk levels using the string values from the data
-            "circle-color": [
+            "fill-color": [
               "match",
-              ["get", "risk_level"],
-              "Rendah",
-              "#FFFF00", // Yellow for low risk
-              "Sedang",
-              "#FFA500", // Orange for medium risk
-              "Rawan",
-              "#FF4500", // OrangeRed for high risk
-              "Bahaya",
-              "#FF0000", // Red for very high risk
-              "Sangat Bahaya",
-              "#8B0000", // DarkRed for extreme risk
+              ["get", "severity"],
+              "Very Low",
+              "#00FF00", // Green
+              "Low",
+              "#90EE90", // LightGreen
+              "Medium",
+              "#FFFF00", // Yellow
+              "High",
+              "#FFA500", // Orange
+              "Very High",
+              "#FF4500", // OrangeRed
+              "Extreme",
+              "#8B0000", // DarkRed
               "#BBBBBB", // Default gray
             ],
-            "circle-opacity": 0.7,
+            "fill-opacity": 0.6,
           },
         });
 
-        // Add stroke layer for points
+        // Add line layer for polygon borders
         map.current.addLayer({
-          id: "prediction-circle-stroke",
-          type: "circle",
+          id: "prediction-line",
+          type: "line",
           source: "prediction",
           paint: {
-            "circle-radius": 11,
-            "circle-color": "#000000",
-            "circle-opacity": 0,
-            "circle-stroke-width": 1,
-            "circle-stroke-color": "#000000",
+            "line-color": "#000000",
+            "line-width": 1,
+            "line-opacity": 0.8,
           },
         });
 
         // Add hover effect
-        map.current.on("mouseenter", "prediction-circle", () => {
+        map.current.on("mouseenter", "prediction-fill", () => {
           if (map.current) {
             map.current.getCanvas().style.cursor = "pointer";
           }
         });
 
-        map.current.on("mouseleave", "prediction-circle", () => {
+        map.current.on("mouseleave", "prediction-fill", () => {
           if (map.current) {
             map.current.getCanvas().style.cursor = "";
           }
         });
 
         // Add click event for showing popup with details
-        map.current.on("click", "prediction-circle", (e) => {
+        map.current.on("click", "prediction-fill", (e) => {
           if (e.features && e.features.length > 0) {
             const feature = e.features[0];
             setSelectedFeature(feature);
             setShowInfoPanel(true);
           }
         });
+
+        // Zoom ke data yang ditransform
+        if (transformedData.length > 0) {
+          // Hitung bounding box manual
+          let minLng = Infinity,
+            minLat = Infinity;
+          let maxLng = -Infinity,
+            maxLat = -Infinity;
+
+          transformedData.forEach((feature) => {
+            const coords = feature.geometry.coordinates;
+
+            // Flatten nested coordinates untuk MultiPolygon
+            const flattenCoords = (c) => {
+              if (typeof c[0] === "number") {
+                minLng = Math.min(minLng, c[0]);
+                maxLng = Math.max(maxLng, c[0]);
+                minLat = Math.min(minLat, c[1]);
+                maxLat = Math.max(maxLat, c[1]);
+              } else {
+                c.forEach(flattenCoords);
+              }
+            };
+
+            flattenCoords(coords);
+          });
+
+          // Fit bounds ke area data
+          if (minLng !== Infinity && maxLng !== -Infinity) {
+            map.current.fitBounds(
+              [
+                [minLng, minLat],
+                [maxLng, maxLat],
+              ],
+              { padding: 50, duration: 1000 }
+            );
+          }
+        }
+
+        console.log("Prediction layers added successfully");
       } catch (error) {
         console.error("Error adding prediction layers:", error);
       }
     } else {
       // Clean up layers
-      safelyRemoveLayerAndSource("prediction-circle", "prediction");
-      safelyRemoveLayerAndSource("prediction-circle-stroke", "prediction");
+      safelyRemoveLayerAndSource("prediction-fill", "prediction");
+      safelyRemoveLayerAndSource("prediction-line", "prediction");
     }
   }, [predictionData, showPrediction]);
 
@@ -515,69 +601,58 @@ function Maps() {
   useEffect(() => {
     if (!map.current || !map.current.loaded()) return;
 
-    if (propertyData.length > 0 && showProperties) {
-      // Remove existing property layer if it exists
-      safelyRemoveLayerAndSource("property-points", "properties");
-      safelyRemoveLayerAndSource("property-labels", "properties");
+    if (lakeData.length > 0 && showLakes) {
+      safelyRemoveLayerAndSource("lake-polygons", "lakes");
+      safelyRemoveLayerAndSource("lake-lines", "lakes");
 
       try {
-        // Add property data as a source
-        map.current.addSource("properties", {
+        // Add lake data as a source
+        map.current.addSource("lakes", {
           type: "geojson",
           data: {
             type: "FeatureCollection",
-            features: propertyData,
+            features: lakeData,
           },
         });
 
-        // Add circle layer for property points
+        // Add lake fill layer
         map.current.addLayer({
-          id: "property-points",
-          type: "circle",
-          source: "properties",
+          id: "lake-polygons",
+          type: "fill",
+          source: "lakes",
           paint: {
-            "circle-radius": 8,
-            "circle-color": "#4CAF50",
-            "circle-opacity": 0.8,
-            "circle-stroke-width": 1,
-            "circle-stroke-color": "#FFFFFF",
+            "fill-color": "#4A90E2",
+            "fill-opacity": 0.6,
           },
         });
 
-        // Add text labels for properties
+        // Add lake outline layer
         map.current.addLayer({
-          id: "property-labels",
-          type: "symbol",
-          source: "properties",
-          layout: {
-            "text-field": ["get", "kategori_properti"],
-            "text-font": ["Open Sans Regular"],
-            "text-size": 11,
-            "text-offset": [0, 1.5],
-            "text-anchor": "top",
-          },
+          id: "lake-lines",
+          type: "line",
+          source: "lakes",
           paint: {
-            "text-color": "#333333",
-            "text-halo-color": "#FFFFFF",
-            "text-halo-width": 1,
+            "line-color": "#2E5C8A",
+            "line-width": 2,
+            "line-opacity": 0.8,
           },
         });
 
         // Add hover effect
-        map.current.on("mouseenter", "property-points", () => {
+        map.current.on("mouseenter", "lake-polygons", () => {
           if (map.current) {
             map.current.getCanvas().style.cursor = "pointer";
           }
         });
 
-        map.current.on("mouseleave", "property-points", () => {
+        map.current.on("mouseleave", "lake-polygons", () => {
           if (map.current) {
             map.current.getCanvas().style.cursor = "";
           }
         });
 
-        // Add click event for showing property info
-        map.current.on("click", "property-points", (e) => {
+        // Add click event
+        map.current.on("click", "lake-polygons", (e) => {
           if (e.features && e.features.length > 0) {
             const feature = e.features[0];
             setSelectedFeature(feature);
@@ -585,14 +660,13 @@ function Maps() {
           }
         });
       } catch (error) {
-        console.error("Error adding property layers:", error);
+        console.error("Error adding lake layers:", error);
       }
     } else {
-      // Remove property layers if properties are hidden
-      safelyRemoveLayerAndSource("property-points", "properties");
-      safelyRemoveLayerAndSource("property-labels", "properties");
+      safelyRemoveLayerAndSource("lake-polygons", "lakes");
+      safelyRemoveLayerAndSource("lake-lines", "lakes");
     }
-  }, [propertyData, showProperties]);
+  }, [lakeData, showLakes]);
 
   // Function to format feature properties for display
   const formatFeatureInfo = (feature) => {
@@ -645,93 +719,82 @@ function Maps() {
           ],
         };
 
-      case "prediction-circle": {
-        // Map Indonesian risk levels to English descriptions
-        const riskLevelMapping = {
-          Rendah: "Low",
-          Sedang: "Medium",
-          Rawan: "High",
-          Bahaya: "Very High",
-          "Sangat Bahaya": "Extreme",
-        };
-
+      case "prediction-fill": {
+        // ← ganti dari "prediction-circle"
         return {
           title: "Flood Risk Prediction",
           details: [
             {
               label: "Risk Level",
-              value: properties.risk_level
-                ? riskLevelMapping[properties.risk_level] ||
-                  properties.risk_level
-                : "N/A",
+              value: properties.severity || "N/A", // ← pakai severity
             },
             {
               label: "Risk Score",
               value: properties.risk_score || "N/A",
             },
             {
+              label: "Risk Class",
+              value: properties.risk_class || "N/A",
+            },
+            {
               label: "Location",
-              value: `${properties.desa}, ${properties.kecamatan}, ${properties.wilayah}`,
+              value: `${properties.desa}, ${properties.kecamatan}`,
             },
             {
-              label: "Predicted For",
-              value: `${properties.month} ${properties.year}`,
+              label: "Period",
+              value: `${properties.bulan.replace("-", " ")}
+              `,
             },
+
             {
-              label: "Distance to River",
-              value: properties.dist_to_river
-                ? `${properties.dist_to_river.toFixed(2)} m`
+              label: "Area (Ha)",
+              value: properties.area_ha
+                ? `${properties.area_ha.toFixed(4)} Ha`
                 : "N/A",
             },
             {
-              label: "Elevation",
-              value: properties.flood_elev
-                ? `${properties.flood_elev.toFixed(2)} m`
+              label: "High Risk Area",
+              value: properties.high_risk
+                ? `${properties.high_risk.toFixed(4)} Ha`
                 : "N/A",
+            },
+            {
+              label: "Extreme Risk Area",
+              value: properties.extreme_ar
+                ? `${properties.extreme_ar.toFixed(4)} Ha`
+                : "N/A",
+            },
+            {
+              label: "Reason",
+              value: properties.reason || "N/A",
             },
           ],
         };
       }
 
-      case "property-points": {
-        const formattedPrice = new Intl.NumberFormat("id-ID", {
-          style: "currency",
-          currency: "IDR",
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0,
-        }).format(properties.harga_properti);
-
+      case "lake-polygons":
         return {
-          title: properties.nama_properti || "Property",
+          title: properties.namobj || "Lake",
           details: [
-            { label: "Category", value: properties.kategori_properti || "N/A" },
-            { label: "Status", value: properties.status_properti || "N/A" },
-            { label: "Price", value: formattedPrice || "N/A" },
+            { label: "Name", value: properties.namobj || "Unknown" },
+            { label: "Type", value: properties.remark || "Lake/Situ" },
+            { label: "Location Code", value: properties.kodlok || "N/A" },
             {
-              label: "Land Area",
-              value: properties.luas_tanah
-                ? `${properties.luas_tanah} m²`
+              label: "Area",
+              value: properties.shape_area
+                ? `${(properties.shape_area * 1000000).toFixed(2)} m²`
                 : "N/A",
             },
             {
-              label: "Building Area",
-              value: properties.luas_bangunan
-                ? `${properties.luas_bangunan} m²`
+              label: "Perimeter",
+              value: properties.shape_leng
+                ? `${(properties.shape_leng * 1000).toFixed(2)} m`
                 : "N/A",
             },
-            { label: "Address", value: properties.jalan_terdekat || "N/A" },
-            { label: "District", value: properties.kecamatan || "N/A" },
-            { label: "Sub-district", value: properties.kelurahan || "N/A" },
-            {
-              label: "More Info",
-              value: properties.link_lengkap_properti
-                ? `<a href="${properties.link_lengkap_properti}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:6px 12px;background-color:#1d4ed8;color:white;text-align:center;text-decoration:none;border-radius:4px;">View Details</a>`
-                : "N/A",
-              isHTML: true,
-            },
+            { label: "Watershed", value: properties.namwas || "N/A" },
+            { label: "Basin", value: properties.namdas || "N/A" },
           ],
         };
-      }
 
       default:
         return {
@@ -769,8 +832,9 @@ function Maps() {
         filters.prediction.month,
         filters.prediction.year
       );
-    } else if (section === "property") {
-      handleFetchPropertyData(filters.property.city);
+    } else if (section === "lake") {
+      // ← jadi ini
+      handleFetchLakeData(filters.lake.city);
     } else if (section === "river") {
       handleFetchRiverData(filters.river.city);
     }
@@ -784,7 +848,11 @@ function Maps() {
         section === "administrative"
           ? { city: "Kota Bandung", month: "" }
           : section === "prediction"
-          ? { city: "", month: "", year: "" }
+          ? {
+              city: "Kota Bandung",
+              month: new Date().getMonth() + 1,
+              year: "2025",
+            } // ← update ini
           : section === "river"
           ? { city: "" }
           : { city: "" },
@@ -794,9 +862,13 @@ function Maps() {
     if (section === "administrative") {
       handleFetchAdministrativeData("Kota Bandung", "");
     } else if (section === "prediction") {
-      handleFetchPredictionData("", "", "");
-    } else if (section === "property") {
-      handleFetchPropertyData("");
+      handleFetchPredictionData(
+        "Kota Bandung",
+        new Date().getMonth() + 1,
+        "2025"
+      ); // ← update ini
+    } else if (section === "lake") {
+      handleFetchLakeData("");
     } else if (section === "river") {
       handleFetchRiverData("");
     }
@@ -948,17 +1020,18 @@ function Maps() {
           </div>
         </div>
         {/* Property Filter */}
+        {/* Lake Filter */}
         <div className="bg-transparent p-3 rounded-xl shadow-md">
-          <h3 className="font-bold text-gray-800 mb-2">Property Filters</h3>
+          <h3 className="font-bold text-gray-800 mb-2">Lake Filters</h3>
           <div className="grid grid-cols-1 gap-2">
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 City
               </label>
               <select
-                value={filters.property.city}
+                value={filters.lake.city}
                 onChange={(e) =>
-                  handleFilterChange("property", "city", e.target.value)
+                  handleFilterChange("lake", "city", e.target.value)
                 }
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
               >
@@ -973,13 +1046,13 @@ function Maps() {
           </div>
           <div className="mt-3 flex space-x-2">
             <button
-              onClick={() => handleFilterSubmit("property")}
+              onClick={() => handleFilterSubmit("lake")}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
               Apply Filter
             </button>
             <button
-              onClick={() => clearFilters("property")}
+              onClick={() => clearFilters("lake")}
               className="inline-flex items-center px-4 py-2 border border-green-300 text-sm font-medium rounded-md shadow-sm text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
             >
               Clear
@@ -1334,7 +1407,7 @@ function Maps() {
                     <div className="flex items-center">
                       <div
                         className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
-                          showProperties
+                          showLakes
                             ? "bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-sm"
                             : "bg-gray-50 text-gray-400"
                         }`}
@@ -1342,28 +1415,24 @@ function Maps() {
                         <HomeIcon size={20} />
                       </div>
                       <div className="ml-4">
-                        <div className="font-medium text-gray-800">
-                          Properties
-                        </div>
+                        <div className="font-medium text-gray-800">Lakes</div>
                         <div className="text-sm text-gray-500">
-                          {showProperties
-                            ? "Property listings visible"
-                            : "Properties hidden"}
+                          {showLakes ? "Lake listings visible" : "Lakes hidden"}
                         </div>
                       </div>
                     </div>
                     <div className="relative inline-block w-14 align-middle select-none">
                       <div
                         className={`block w-14 h-7 rounded-full cursor-pointer transition-all duration-300 shadow-inner ${
-                          showProperties
+                          showLakes
                             ? "bg-gradient-to-r from-blue-500 to-cyan-400"
                             : "bg-gray-200"
                         }`}
-                        onClick={() => setShowProperties(!showProperties)}
+                        onClick={() => setShowLakes(!showLakes)}
                       >
                         <div
                           className={`absolute top-0.5 left-0.5 bg-white w-6 h-6 rounded-full transition-transform duration-300 shadow-md ${
-                            showProperties ? "translate-x-7" : "translate-x-0"
+                            showLakes ? "translate-x-7" : "translate-x-0"
                           }`}
                         />
                       </div>
@@ -1512,18 +1581,18 @@ function Maps() {
 
                 <button
                   className={`p-3 rounded-xl border backdrop-blur-md transition-all ${
-                    showProperties
+                    showLakes
                       ? "bg-blue-500/30 text-white border-blue-300/50 shadow-lg"
                       : "bg-black/30 text-white border-white/30 hover:bg-black/40"
                   }`}
-                  onClick={() => setShowProperties(!showProperties)}
+                  onClick={() => setShowLakes(!showLakes)}
                 >
                   <HomeIcon
                     size={18}
                     className="mx-auto mb-1 text-white drop-shadow-lg"
                   />
                   <div className="text-xs font-semibold text-white drop-shadow">
-                    Properties
+                    Lakes
                   </div>
                 </button>
               </div>
