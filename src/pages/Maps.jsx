@@ -29,6 +29,15 @@ import {
   fetchLakeData,
 } from "../services/mapsapi.js";
 
+const predictionLegendData = [
+    { label: "Very Low", color: "#00FF00" },  // Green
+    { label: "Low", color: "#90EE90" },       // LightGreen
+    { label: "Medium", color: "#FFFF00" },    // Yellow
+    { label: "High", color: "#FFA500" },      // Orange
+    { label: "Very High", color: "#FF4500" }, // OrangeRed
+    { label: "Extreme", color: "#8B0000" },   // DarkRed
+  ];
+
 function Maps() {
   const MAP_SERVICE_KEY = import.meta.env.VITE_MAP_SERVICE_KEY;
   const mapContainer = useRef(null);
@@ -47,6 +56,11 @@ function Maps() {
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [mapStyleMenuOpen, setMapStyleMenuOpen] = useState(false);
+
+const indonesianMonths = [
+    "januari", "februari", "maret", "april", "mei", "juni",
+    "juli", "agustus", "september", "oktober", "november", "desember"
+  ];
 
   // States for filters
   // States for filters
@@ -109,9 +123,17 @@ function Maps() {
     }
   };
 
-  const handleFetchPredictionData = async (city, month, year) => {
+const handleFetchPredictionData = async (city, month, year) => {
     try {
-      const data = await fetchPredictionData(city, month, year);
+      // Pastikan month adalah angka agar bisa dipakai sebagai index array
+      const monthIndex = parseInt(month) - 1;
+      
+      // Ambil nama bulan berdasarkan index (misal: 12 -> "desember")
+      // Jika monthIndex valid, pakai nama bulan. Jika tidak, fallback ke month asli.
+      const bulanParam = indonesianMonths[monthIndex] || month;
+
+      // Panggil API dengan parameter yang sudah dikonversi
+      const data = await fetchPredictionData(city, bulanParam, year);
       setPredictionData(data);
     } catch (error) {
       console.error("Failed to fetch prediction data:", error);
@@ -453,6 +475,7 @@ function Maps() {
   });
 
   // Handle prediction layer dengan click interaction untuk polygons
+ // Handle prediction layer dengan click interaction untuk polygons
   useEffect(() => {
     if (!map.current || !map.current.loaded()) return;
 
@@ -465,25 +488,15 @@ function Maps() {
       safelyRemoveLayerAndSource("prediction-line", "prediction");
 
       try {
-        // Transform semua features dari EPSG:3857 ke EPSG:4326
-        const transformedData = predictionData.map(transformFeature);
-
-        console.log(
-          "Original coords sample:",
-          predictionData[0]?.geometry?.coordinates?.[0]?.[0]?.[0]
-        );
-        console.log(
-          "Transformed coords sample:",
-          transformedData[0]?.geometry?.coordinates?.[0]?.[0]?.[0]
-        );
-        console.log("Total features transformed:", transformedData.length);
+        // LANGSUNG GUNAKAN predictionData (TIDAK ADA TRANSFORMASI LAGI)
+        const finalData = predictionData;
 
         // Add prediction data as a source
         map.current.addSource("prediction", {
           type: "geojson",
           data: {
             type: "FeatureCollection",
-            features: transformedData,
+            features: finalData,
           },
         });
 
@@ -548,25 +561,28 @@ function Maps() {
           }
         });
 
-        // Zoom ke data yang ditransform
-        if (transformedData.length > 0) {
-          // Hitung bounding box manual
+        // Zoom ke data (Fit Bounds Logic)
+        if (finalData.length > 0) {
           let minLng = Infinity,
             minLat = Infinity;
           let maxLng = -Infinity,
             maxLat = -Infinity;
 
-          transformedData.forEach((feature) => {
+          finalData.forEach((feature) => {
+            if (!feature.geometry || !feature.geometry.coordinates) return;
+
             const coords = feature.geometry.coordinates;
 
-            // Flatten nested coordinates untuk MultiPolygon
+            // Helper untuk flatten nested coordinates (karena MultiPolygon bisa sangat dalam nesting-nya)
             const flattenCoords = (c) => {
-              if (typeof c[0] === "number") {
+              if (Array.isArray(c) && c.length > 0 && typeof c[0] === "number") {
+                // Ini adalah pasangan [lng, lat]
                 minLng = Math.min(minLng, c[0]);
                 maxLng = Math.max(maxLng, c[0]);
                 minLat = Math.min(minLat, c[1]);
                 maxLat = Math.max(maxLat, c[1]);
-              } else {
+              } else if (Array.isArray(c)) {
+                // Masih array of arrays, loop lagi
                 c.forEach(flattenCoords);
               }
             };
@@ -574,7 +590,7 @@ function Maps() {
             flattenCoords(coords);
           });
 
-          // Fit bounds ke area data
+          // Fit bounds ke area data jika koordinat valid ditemukan
           if (minLng !== Infinity && maxLng !== -Infinity) {
             map.current.fitBounds(
               [
@@ -596,7 +612,6 @@ function Maps() {
       safelyRemoveLayerAndSource("prediction-line", "prediction");
     }
   }, [predictionData, showPrediction]);
-
   // Add effect to render property points on the map
   useEffect(() => {
     if (!map.current || !map.current.loaded()) return;
@@ -736,6 +751,30 @@ function Maps() {
               label: "Risk Class",
               value: properties.risk_class || "N/A",
             },
+          {
+                label: "Very Low Percentage",
+                value: properties.pct_very_l || "N/A",
+              },
+              {
+                label: "Low Percentage",
+                value: properties.pct_low || "N/A",
+              },
+              {
+                label: "Medium Percentage",
+                value: properties.pct_medium || "N/A",
+              },
+              {
+                label: "High Percentage",
+                value: properties.pct_high || "N/A",
+              },
+              {
+                label: "Very High Percentage",
+                value: properties.pct_very_h || "N/A",
+              },
+              {
+                label: "Extreme Percentage",
+                value: properties.pct_extrem || "N/A",
+              },
             {
               label: "Location",
               value: `${properties.desa}, ${properties.kecamatan}`,
@@ -745,24 +784,9 @@ function Maps() {
               value: `${properties.bulan.replace("-", " ")}
               `,
             },
-
             {
-              label: "Area (Ha)",
-              value: properties.area_ha
-                ? `${properties.area_ha.toFixed(4)} Ha`
-                : "N/A",
-            },
-            {
-              label: "High Risk Area",
-              value: properties.high_risk
-                ? `${properties.high_risk.toFixed(4)} Ha`
-                : "N/A",
-            },
-            {
-              label: "Extreme Risk Area",
-              value: properties.extreme_ar
-                ? `${properties.extreme_ar.toFixed(4)} Ha`
-                : "N/A",
+              label: "Dominant Factor",
+              value: properties.dominant_f
             },
             {
               label: "Reason",
@@ -989,7 +1013,7 @@ function Maps() {
               </label>
               <select
                 value="2025"
-                disabled // mencegah user mengubah
+                enabled // mencegah user mengubah
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-white/30 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-transparent backdrop-blur-md cursor-not-allowed text-black placeholder-black/70"
               >
                 {yearOptions.map((year) => (
@@ -1157,8 +1181,28 @@ function Maps() {
           >
             <ZoomOutIcon />
           </button>
-        </div>
 
+          {showPrediction && (
+            <div className="bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-gray-100 mt-2 min-w-[120px] animate-in fade-in slide-in-from-right-4">
+              <h5 className="font-bold text-gray-800 text-xs mb-2 border-b border-gray-200 pb-1">
+                Risk Level
+              </h5>
+              <div className="space-y-1.5">
+                {predictionLegendData.map((item) => (
+                  <div key={item.label} className="flex items-center justify-between gap-3">
+                    <span className="text-[10px] font-medium text-gray-600">
+                      {item.label}
+                    </span>
+                    <div
+                      className="w-3 h-3 rounded-sm border border-black/10 shadow-sm"
+                      style={{ backgroundColor: item.color }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
         <button
           className={`
     fixed z-30 group

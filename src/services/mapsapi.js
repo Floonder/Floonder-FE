@@ -130,8 +130,8 @@ export const fetchPredictionData = async (city, month, year) => {
     // Build query parameters
     const params = new URLSearchParams();
     if (city) params.append("kota", city);
-    if (month) params.append("month", month);
-    if (year) params.append("year", year);
+    if (month) params.append("bulan", month);
+    if (year) params.append("tahun", year);
     params.append("limit", "10000");
 
     // Ganti endpoint dari flood-point ke flood-area
