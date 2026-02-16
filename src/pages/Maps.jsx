@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import Navbar from "../components/Navbar";
+import "maplibre-gl/dist/maplibre-gl.css";
 import {
   LayersIcon,
   ZoomInIcon,
@@ -30,13 +30,13 @@ import {
 } from "../services/mapsapi.js";
 
 const predictionLegendData = [
-    { label: "Very Low", color: "#00FF00" },  // Green
-    { label: "Low", color: "#90EE90" },       // LightGreen
-    { label: "Medium", color: "#FFFF00" },    // Yellow
-    { label: "High", color: "#FFA500" },      // Orange
-    { label: "Very High", color: "#FF4500" }, // OrangeRed
-    { label: "Extreme", color: "#8B0000" },   // DarkRed
-  ];
+  { label: "Very Low", color: "#00FF00" },  // Green
+  { label: "Low", color: "#90EE90" },       // LightGreen
+  { label: "Medium", color: "#FFFF00" },    // Yellow
+  { label: "High", color: "#FFA500" },      // Orange
+  { label: "Very High", color: "#FF4500" }, // OrangeRed
+  { label: "Extreme", color: "#8B0000" },   // DarkRed
+];
 
 function Maps() {
   const MAP_SERVICE_KEY = import.meta.env.VITE_MAP_SERVICE_KEY;
@@ -57,19 +57,18 @@ function Maps() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [mapStyleMenuOpen, setMapStyleMenuOpen] = useState(false);
 
-const indonesianMonths = [
+  const indonesianMonths = [
     "januari", "februari", "maret", "april", "mei", "juni",
     "juli", "agustus", "september", "oktober", "november", "desember"
   ];
 
   // States for filters
-  // States for filters
   const [filters, setFilters] = useState({
     administrative: { city: "Kota Bandung", month: new Date().getMonth() + 1 },
     prediction: {
-      city: "Kota Bandung", // ← tambahkan default
+      city: "Kota Bandung",
       month: new Date().getMonth() + 1,
-      year: "2025", // ← tambahkan default year
+      year: "2025",
     },
     lake: { city: "" },
     river: { city: "" },
@@ -123,13 +122,12 @@ const indonesianMonths = [
     }
   };
 
-const handleFetchPredictionData = async (city, month, year) => {
+  const handleFetchPredictionData = async (city, month, year) => {
     try {
-      // Pastikan month adalah angka agar bisa dipakai sebagai index array
+      // Ensure month is a number for array indexing
       const monthIndex = parseInt(month) - 1;
-      
-      // Ambil nama bulan berdasarkan index (misal: 12 -> "desember")
-      // Jika monthIndex valid, pakai nama bulan. Jika tidak, fallback ke month asli.
+
+      // Get month name by index
       const bulanParam = indonesianMonths[monthIndex] || month;
 
       // Panggil API dengan parameter yang sudah dikonversi
@@ -207,8 +205,8 @@ const handleFetchPredictionData = async (city, month, year) => {
         container: mapContainer.current,
         style: mapStyles[mapStyle],
         center: [107.6098, -6.9149],
-        zoom: 12, // untuk jarak tampilan ~50m
-        pitch: is3DMode ? 75 : 0, // nilai yang lebih optimal untuk 3D
+        zoom: 12,
+        pitch: is3DMode ? 75 : 0,
       });
 
       map.current.on("load", () => {
@@ -286,9 +284,9 @@ const handleFetchPredictionData = async (city, month, year) => {
       filters.administrative.month
     );
     handleFetchPredictionData(
-      filters.prediction.city, // ← sekarang akan pakai "Kota Bandung"
+      filters.prediction.city,
       filters.prediction.month,
-      filters.prediction.year // ← sekarang akan pakai "2025"
+      filters.prediction.year
     );
     handleFetchLakeData(filters.lake.city);
     handleFetchRiverData(filters.administrative.city);
@@ -474,13 +472,9 @@ const handleFetchPredictionData = async (city, month, year) => {
     },
   });
 
-  // Handle prediction layer dengan click interaction untuk polygons
- // Handle prediction layer dengan click interaction untuk polygons
+  // Handle prediction layer with click interaction for polygons
   useEffect(() => {
     if (!map.current || !map.current.loaded()) return;
-
-    console.log("Prediction Data:", predictionData);
-    console.log("Show Prediction:", showPrediction);
 
     if (predictionData.length > 0 && showPrediction) {
       // Remove existing prediction layers if they exist
@@ -488,7 +482,6 @@ const handleFetchPredictionData = async (city, month, year) => {
       safelyRemoveLayerAndSource("prediction-line", "prediction");
 
       try {
-        // LANGSUNG GUNAKAN predictionData (TIDAK ADA TRANSFORMASI LAGI)
         const finalData = predictionData;
 
         // Add prediction data as a source
@@ -561,7 +554,7 @@ const handleFetchPredictionData = async (city, month, year) => {
           }
         });
 
-        // Zoom ke data (Fit Bounds Logic)
+        // Zoom to data bounds
         if (finalData.length > 0) {
           let minLng = Infinity,
             minLat = Infinity;
@@ -573,16 +566,16 @@ const handleFetchPredictionData = async (city, month, year) => {
 
             const coords = feature.geometry.coordinates;
 
-            // Helper untuk flatten nested coordinates (karena MultiPolygon bisa sangat dalam nesting-nya)
+            // Helper to flatten nested coordinates
             const flattenCoords = (c) => {
               if (Array.isArray(c) && c.length > 0 && typeof c[0] === "number") {
-                // Ini adalah pasangan [lng, lat]
+                // Pair of [lng, lat]
                 minLng = Math.min(minLng, c[0]);
                 maxLng = Math.max(maxLng, c[0]);
                 minLat = Math.min(minLat, c[1]);
                 maxLat = Math.max(maxLat, c[1]);
               } else if (Array.isArray(c)) {
-                // Masih array of arrays, loop lagi
+                // Nested array, recurse
                 c.forEach(flattenCoords);
               }
             };
@@ -590,7 +583,7 @@ const handleFetchPredictionData = async (city, month, year) => {
             flattenCoords(coords);
           });
 
-          // Fit bounds ke area data jika koordinat valid ditemukan
+          // Fit bounds if valid coordinates found
           if (minLng !== Infinity && maxLng !== -Infinity) {
             map.current.fitBounds(
               [
@@ -601,8 +594,6 @@ const handleFetchPredictionData = async (city, month, year) => {
             );
           }
         }
-
-        console.log("Prediction layers added successfully");
       } catch (error) {
         console.error("Error adding prediction layers:", error);
       }
@@ -751,42 +742,17 @@ const handleFetchPredictionData = async (city, month, year) => {
               label: "Risk Class",
               value: properties.risk_class || "N/A",
             },
-          {
-                label: "Very Low Percentage",
-                value: properties.pct_very_l || "N/A",
-              },
-              {
-                label: "Low Percentage",
-                value: properties.pct_low || "N/A",
-              },
-              {
-                label: "Medium Percentage",
-                value: properties.pct_medium || "N/A",
-              },
-              {
-                label: "High Percentage",
-                value: properties.pct_high || "N/A",
-              },
-              {
-                label: "Very High Percentage",
-                value: properties.pct_very_h || "N/A",
-              },
-              {
-                label: "Extreme Percentage",
-                value: properties.pct_extrem || "N/A",
-              },
             {
               label: "Location",
-              value: `${properties.desa}, ${properties.kecamatan}`,
+              value: `${properties.NAMOBJ || properties.WADMKD}, ${properties.WADMKC}`,
             },
             {
               label: "Period",
-              value: `${properties.bulan.replace("-", " ")}
-              `,
+              value: `${properties.month || ""} ${properties.year || ""}`,
             },
             {
               label: "Dominant Factor",
-              value: properties.dominant_f
+              value: properties.dominant
             },
             {
               label: "Reason",
@@ -872,14 +838,14 @@ const handleFetchPredictionData = async (city, month, year) => {
         section === "administrative"
           ? { city: "Kota Bandung", month: "" }
           : section === "prediction"
-          ? {
+            ? {
               city: "Kota Bandung",
               month: new Date().getMonth() + 1,
               year: "2025",
             } // ← update ini
-          : section === "river"
-          ? { city: "" }
-          : { city: "" },
+            : section === "river"
+              ? { city: "" }
+              : { city: "" },
     }));
 
     // Fetch data with cleared filters
@@ -1154,7 +1120,6 @@ const handleFetchPredictionData = async (city, month, year) => {
 
   return (
     <div className="flex flex-col h-screen">
-      <Navbar className="z-20" />
       {/* Map container */}
       <div className="relative w-full h-screen">
         <div ref={mapContainer} className="w-full h-full" />
@@ -1210,11 +1175,10 @@ const handleFetchPredictionData = async (city, month, year) => {
     shadow-sm hover:shadow-md
     transition-all duration-200 ease-out
     hover:bg-white active:scale-95
-    ${
-      isSidebarOpen
-        ? "md:left-96 md:top-1/2 md:-translate-y-1/2 md:rounded-md bottom-6 right-6 md:right-auto rounded-md w-10 h-10"
-        : "md:left-4 md:top-1/2 md:-translate-y-1/2 md:rounded-md bottom-6 left-1/2 transform -translate-x-1/2 rounded-full md:transform-none md:translate-x-0 w-11 h-11"
-    }
+    ${isSidebarOpen
+              ? "md:left-96 md:top-1/2 md:-translate-y-1/2 md:rounded-md bottom-6 right-6 md:right-auto rounded-md w-10 h-10"
+              : "md:left-4 md:top-1/2 md:-translate-y-1/2 md:rounded-md bottom-6 left-1/2 transform -translate-x-1/2 rounded-full md:transform-none md:translate-x-0 w-11 h-11"
+            }
     flex items-center justify-center
   `}
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -1257,9 +1221,8 @@ const handleFetchPredictionData = async (city, month, year) => {
 
         {/* Desktop Sidebar Panel */}
         <div
-          className={`hidden md:block fixed top-16 left-0 h-[calc(100vh-4rem)] w-96 bg-transparent backdrop-blur-lg shadow-xl border-r border-gray-100/60 transform transition-transform duration-300 ease-in-out z-20 ${
-            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+          className={`hidden md:block fixed top-16 left-0 h-[calc(100vh-4rem)] w-96 bg-transparent backdrop-blur-lg shadow-xl border-r border-gray-100/60 transform transition-transform duration-300 ease-in-out z-20 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
         >
           {/* Sidebar Header */}
           <div className=" bg-transparent m-4 rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
@@ -1325,11 +1288,10 @@ const handleFetchPredictionData = async (city, month, year) => {
                   <div className="flex items-center justify-between p-4 hover:bg-gradient-to-r hover:from-blue-50/80 hover:to-cyan-50/60 rounded-xl transition-all duration-200 border border-gray-50">
                     <div className="flex items-center">
                       <div
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
-                          showRivers
-                            ? "bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-sm"
-                            : "bg-gray-50 text-gray-400"
-                        }`}
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${showRivers
+                          ? "bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-sm"
+                          : "bg-gray-50 text-gray-400"
+                          }`}
                       >
                         <DropletIcon size={20} />
                       </div>
@@ -1342,17 +1304,15 @@ const handleFetchPredictionData = async (city, month, year) => {
                     </div>
                     <div className="relative inline-block w-14 align-middle select-none">
                       <div
-                        className={`block w-14 h-7 rounded-full cursor-pointer transition-all duration-300 shadow-inner ${
-                          showRivers
-                            ? "bg-gradient-to-r from-blue-500 to-cyan-400"
-                            : "bg-gray-200"
-                        }`}
+                        className={`block w-14 h-7 rounded-full cursor-pointer transition-all duration-300 shadow-inner ${showRivers
+                          ? "bg-gradient-to-r from-blue-500 to-cyan-400"
+                          : "bg-gray-200"
+                          }`}
                         onClick={() => setShowRivers(!showRivers)}
                       >
                         <div
-                          className={`absolute top-0.5 left-0.5 bg-white w-6 h-6 rounded-full transition-transform duration-300 shadow-md ${
-                            showRivers ? "translate-x-7" : "translate-x-0"
-                          }`}
+                          className={`absolute top-0.5 left-0.5 bg-white w-6 h-6 rounded-full transition-transform duration-300 shadow-md ${showRivers ? "translate-x-7" : "translate-x-0"
+                            }`}
                         />
                       </div>
                     </div>
@@ -1362,11 +1322,10 @@ const handleFetchPredictionData = async (city, month, year) => {
                   <div className="flex items-center justify-between p-4 hover:bg-gradient-to-r hover:from-blue-50/80 hover:to-cyan-50/60 rounded-xl transition-all duration-200 border border-gray-50">
                     <div className="flex items-center">
                       <div
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
-                          showAdministrativeBoundaries
-                            ? "bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-sm"
-                            : "bg-gray-50 text-gray-400"
-                        }`}
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${showAdministrativeBoundaries
+                          ? "bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-sm"
+                          : "bg-gray-50 text-gray-400"
+                          }`}
                       >
                         <MapIcon size={20} />
                       </div>
@@ -1383,11 +1342,10 @@ const handleFetchPredictionData = async (city, month, year) => {
                     </div>
                     <div className="relative inline-block w-14 align-middle select-none">
                       <div
-                        className={`block w-14 h-7 rounded-full cursor-pointer transition-all duration-300 shadow-inner ${
-                          showAdministrativeBoundaries
-                            ? "bg-gradient-to-r from-blue-500 to-cyan-400"
-                            : "bg-gray-200"
-                        }`}
+                        className={`block w-14 h-7 rounded-full cursor-pointer transition-all duration-300 shadow-inner ${showAdministrativeBoundaries
+                          ? "bg-gradient-to-r from-blue-500 to-cyan-400"
+                          : "bg-gray-200"
+                          }`}
                         onClick={() =>
                           setShowAdministrativeBoundaries(
                             !showAdministrativeBoundaries
@@ -1395,11 +1353,10 @@ const handleFetchPredictionData = async (city, month, year) => {
                         }
                       >
                         <div
-                          className={`absolute top-0.5 left-0.5 bg-white w-6 h-6 rounded-full transition-transform duration-300 shadow-md ${
-                            showAdministrativeBoundaries
-                              ? "translate-x-7"
-                              : "translate-x-0"
-                          }`}
+                          className={`absolute top-0.5 left-0.5 bg-white w-6 h-6 rounded-full transition-transform duration-300 shadow-md ${showAdministrativeBoundaries
+                            ? "translate-x-7"
+                            : "translate-x-0"
+                            }`}
                         />
                       </div>
                     </div>
@@ -1409,11 +1366,10 @@ const handleFetchPredictionData = async (city, month, year) => {
                   <div className="flex items-center justify-between p-4 hover:bg-gradient-to-r hover:from-blue-50/80 hover:to-cyan-50/60 rounded-xl transition-all duration-200 border border-gray-50">
                     <div className="flex items-center">
                       <div
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
-                          showPrediction
-                            ? "bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-sm"
-                            : "bg-gray-50 text-gray-400"
-                        }`}
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${showPrediction
+                          ? "bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-sm"
+                          : "bg-gray-50 text-gray-400"
+                          }`}
                       >
                         <ActivityIcon size={20} />
                       </div>
@@ -1430,17 +1386,15 @@ const handleFetchPredictionData = async (city, month, year) => {
                     </div>
                     <div className="relative inline-block w-14 align-middle select-none">
                       <div
-                        className={`block w-14 h-7 rounded-full cursor-pointer transition-all duration-300 shadow-inner ${
-                          showPrediction
-                            ? "bg-gradient-to-r from-blue-500 to-cyan-400"
-                            : "bg-gray-200"
-                        }`}
+                        className={`block w-14 h-7 rounded-full cursor-pointer transition-all duration-300 shadow-inner ${showPrediction
+                          ? "bg-gradient-to-r from-blue-500 to-cyan-400"
+                          : "bg-gray-200"
+                          }`}
                         onClick={() => setShowPrediction(!showPrediction)}
                       >
                         <div
-                          className={`absolute top-0.5 left-0.5 bg-white w-6 h-6 rounded-full transition-transform duration-300 shadow-md ${
-                            showPrediction ? "translate-x-7" : "translate-x-0"
-                          }`}
+                          className={`absolute top-0.5 left-0.5 bg-white w-6 h-6 rounded-full transition-transform duration-300 shadow-md ${showPrediction ? "translate-x-7" : "translate-x-0"
+                            }`}
                         />
                       </div>
                     </div>
@@ -1450,11 +1404,10 @@ const handleFetchPredictionData = async (city, month, year) => {
                   <div className="flex items-center justify-between p-4 hover:bg-gradient-to-r hover:from-blue-50/80 hover:to-cyan-50/60 rounded-xl transition-all duration-200 border border-gray-50">
                     <div className="flex items-center">
                       <div
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
-                          showLakes
-                            ? "bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-sm"
-                            : "bg-gray-50 text-gray-400"
-                        }`}
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${showLakes
+                          ? "bg-gradient-to-r from-blue-500 to-cyan-400 text-white shadow-sm"
+                          : "bg-gray-50 text-gray-400"
+                          }`}
                       >
                         <HomeIcon size={20} />
                       </div>
@@ -1467,17 +1420,15 @@ const handleFetchPredictionData = async (city, month, year) => {
                     </div>
                     <div className="relative inline-block w-14 align-middle select-none">
                       <div
-                        className={`block w-14 h-7 rounded-full cursor-pointer transition-all duration-300 shadow-inner ${
-                          showLakes
-                            ? "bg-gradient-to-r from-blue-500 to-cyan-400"
-                            : "bg-gray-200"
-                        }`}
+                        className={`block w-14 h-7 rounded-full cursor-pointer transition-all duration-300 shadow-inner ${showLakes
+                          ? "bg-gradient-to-r from-blue-500 to-cyan-400"
+                          : "bg-gray-200"
+                          }`}
                         onClick={() => setShowLakes(!showLakes)}
                       >
                         <div
-                          className={`absolute top-0.5 left-0.5 bg-white w-6 h-6 rounded-full transition-transform duration-300 shadow-md ${
-                            showLakes ? "translate-x-7" : "translate-x-0"
-                          }`}
+                          className={`absolute top-0.5 left-0.5 bg-white w-6 h-6 rounded-full transition-transform duration-300 shadow-md ${showLakes ? "translate-x-7" : "translate-x-0"
+                            }`}
                         />
                       </div>
                     </div>
@@ -1499,11 +1450,10 @@ const handleFetchPredictionData = async (city, month, year) => {
                   {Object.keys(mapStyleImages).map((style) => (
                     <div
                       key={style}
-                      className={`rounded-xl border-2 p-3 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-md ${
-                        mapStyle === style
-                          ? "border-blue-400 bg-gradient-to-br from-blue-50/70 to-cyan-50/50 shadow-md"
-                          : "border-gray-100 hover:border-blue-200 hover:bg-gray-50/40"
-                      }`}
+                      className={`rounded-xl border-2 p-3 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-md ${mapStyle === style
+                        ? "border-blue-400 bg-gradient-to-br from-blue-50/70 to-cyan-50/50 shadow-md"
+                        : "border-gray-100 hover:border-blue-200 hover:bg-gray-50/40"
+                        }`}
                       onClick={() => setMapStyle(style)}
                     >
                       <div className="h-20 bg-gray-50 rounded-lg mb-3 overflow-hidden">
@@ -1515,11 +1465,10 @@ const handleFetchPredictionData = async (city, month, year) => {
                       </div>
                       <div className="flex items-center justify-center">
                         <div
-                          className={`w-4 h-4 mr-2 rounded-full border-2 flex-shrink-0 ${
-                            mapStyle === style
-                              ? "border-blue-400"
-                              : "border-gray-300"
-                          }`}
+                          className={`w-4 h-4 mr-2 rounded-full border-2 flex-shrink-0 ${mapStyle === style
+                            ? "border-blue-400"
+                            : "border-gray-300"
+                            }`}
                         >
                           {mapStyle === style && (
                             <div className="w-full h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full scale-75"></div>
@@ -1539,9 +1488,8 @@ const handleFetchPredictionData = async (city, month, year) => {
 
         {/* Mobile Bottom Sheet */}
         <div
-          className={`md:hidden fixed bottom-0 left-0 right-0 bg-transparent backdrop-blur-xl shadow-2xl border-t border-white/20 transform transition-transform duration-300 ease-in-out z-20 rounded-t-2xl ${
-            isSidebarOpen ? "translate-y-0" : "translate-y-full"
-          }`}
+          className={`md:hidden fixed bottom-0 left-0 right-0 bg-transparent backdrop-blur-xl shadow-2xl border-t border-white/20 transform transition-transform duration-300 ease-in-out z-20 rounded-t-2xl ${isSidebarOpen ? "translate-y-0" : "translate-y-full"
+            }`}
           style={{ height: "75vh" }}
         >
           {/* Mobile Header with Drag Handle - Transparent */}
@@ -1569,11 +1517,10 @@ const handleFetchPredictionData = async (city, month, year) => {
               {/* Quick Actions for Mobile - Transparent */}
               <div className="grid grid-cols-4 gap-3 mb-6">
                 <button
-                  className={`p-3 rounded-xl border backdrop-blur-md transition-all ${
-                    showRivers
-                      ? "bg-blue-500/30 text-white border-blue-300/50 shadow-lg"
-                      : "bg-black/30 text-white border-white/30 hover:bg-black/40"
-                  }`}
+                  className={`p-3 rounded-xl border backdrop-blur-md transition-all ${showRivers
+                    ? "bg-blue-500/30 text-white border-blue-300/50 shadow-lg"
+                    : "bg-black/30 text-white border-white/30 hover:bg-black/40"
+                    }`}
                   onClick={() => setShowRivers(!showRivers)}
                 >
                   <DropletIcon
@@ -1586,11 +1533,10 @@ const handleFetchPredictionData = async (city, month, year) => {
                 </button>
 
                 <button
-                  className={`p-3 rounded-xl border backdrop-blur-md transition-all ${
-                    showAdministrativeBoundaries
-                      ? "bg-blue-500/30 text-white border-blue-300/50 shadow-lg"
-                      : "bg-black/30 text-white border-white/30 hover:bg-black/40"
-                  }`}
+                  className={`p-3 rounded-xl border backdrop-blur-md transition-all ${showAdministrativeBoundaries
+                    ? "bg-blue-500/30 text-white border-blue-300/50 shadow-lg"
+                    : "bg-black/30 text-white border-white/30 hover:bg-black/40"
+                    }`}
                   onClick={() =>
                     setShowAdministrativeBoundaries(
                       !showAdministrativeBoundaries
@@ -1607,11 +1553,10 @@ const handleFetchPredictionData = async (city, month, year) => {
                 </button>
 
                 <button
-                  className={`p-3 rounded-xl border backdrop-blur-md transition-all ${
-                    showPrediction
-                      ? "bg-blue-500/30 text-white border-blue-300/50 shadow-lg"
-                      : "bg-black/30 text-white border-white/30 hover:bg-black/40"
-                  }`}
+                  className={`p-3 rounded-xl border backdrop-blur-md transition-all ${showPrediction
+                    ? "bg-blue-500/30 text-white border-blue-300/50 shadow-lg"
+                    : "bg-black/30 text-white border-white/30 hover:bg-black/40"
+                    }`}
                   onClick={() => setShowPrediction(!showPrediction)}
                 >
                   <ActivityIcon
@@ -1624,11 +1569,10 @@ const handleFetchPredictionData = async (city, month, year) => {
                 </button>
 
                 <button
-                  className={`p-3 rounded-xl border backdrop-blur-md transition-all ${
-                    showLakes
-                      ? "bg-blue-500/30 text-white border-blue-300/50 shadow-lg"
-                      : "bg-black/30 text-white border-white/30 hover:bg-black/40"
-                  }`}
+                  className={`p-3 rounded-xl border backdrop-blur-md transition-all ${showLakes
+                    ? "bg-blue-500/30 text-white border-blue-300/50 shadow-lg"
+                    : "bg-black/30 text-white border-white/30 hover:bg-black/40"
+                    }`}
                   onClick={() => setShowLakes(!showLakes)}
                 >
                   <HomeIcon
@@ -1660,11 +1604,10 @@ const handleFetchPredictionData = async (city, month, year) => {
                   {Object.keys(mapStyleImages).map((style) => (
                     <div
                       key={style}
-                      className={`rounded-lg border-2 p-2 cursor-pointer transition-all backdrop-blur-sm ${
-                        mapStyle === style
-                          ? "border-blue-400/70 bg-blue-500/20 shadow-lg"
-                          : "border-white/30 hover:border-blue-400/50 bg-white/10"
-                      }`}
+                      className={`rounded-lg border-2 p-2 cursor-pointer transition-all backdrop-blur-sm ${mapStyle === style
+                        ? "border-blue-400/70 bg-blue-500/20 shadow-lg"
+                        : "border-white/30 hover:border-blue-400/50 bg-white/10"
+                        }`}
                       onClick={() => setMapStyle(style)}
                     >
                       <div className="h-16 bg-white/20 backdrop-blur-sm rounded-md mb-2 overflow-hidden">
@@ -1704,13 +1647,13 @@ const handleFetchPredictionData = async (city, month, year) => {
           <div
             className={`fixed z-30 shadow-2xl overflow-hidden transition-all duration-300 ease-out backdrop-blur-xl bg-white/10 border border-white/30
       ${
-        // Mobile: bottom sheet
-        "bottom-0 left-0 right-0 rounded-t-2xl max-h-[70vh] md:max-h-none"
-      }
+              // Mobile: bottom sheet
+              "bottom-0 left-0 right-0 rounded-t-2xl max-h-[70vh] md:max-h-none"
+              }
       ${
-        // Desktop: side panel
-        "md:absolute md:top-24 md:bottom-auto md:left-20 md:right-auto md:rounded-2xl md:w-80"
-      }
+              // Desktop: side panel
+              "md:absolute md:top-24 md:bottom-auto md:left-20 md:right-auto md:rounded-2xl md:w-80"
+              }
       ${isSidebarOpen ? "md:left-[350px]" : "md:left-20"}
     `}
             style={{
@@ -1787,13 +1730,13 @@ const handleFetchPredictionData = async (city, month, year) => {
 
               {(!formatFeatureInfo(selectedFeature)?.details ||
                 formatFeatureInfo(selectedFeature)?.details.length === 0) && (
-                <div className="text-center py-8">
-                  <MapPinIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-500 text-sm">
-                    Tidak ada informasi tersedia
-                  </p>
-                </div>
-              )}
+                  <div className="text-center py-8">
+                    <MapPinIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <p className="text-gray-500 text-sm">
+                      Tidak ada informasi tersedia
+                    </p>
+                  </div>
+                )}
             </div>
           </div>
         )}

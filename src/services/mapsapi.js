@@ -10,9 +10,8 @@ export const fetchRiverData = async (city) => {
     if (city) params.append("kota", city);
     params.append("limit", "10000");
 
-    const url = `${
-      import.meta.env.VITE_HOST_API
-    }/api/public/gis/sungai?${params.toString()}`;
+    const url = `${import.meta.env.VITE_HOST_API
+      }/api/public/gis/sungai?${params.toString()}`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -71,9 +70,8 @@ export const fetchAdministrativeData = async (city, month) => {
     if (month) params.append("month", month);
     params.append("limit", "10000");
 
-    const url = `${
-      import.meta.env.VITE_HOST_API
-    }/api/public/gis/wilayah-administrasi?${params.toString()}`;
+    const url = `${import.meta.env.VITE_HOST_API
+      }/api/public/gis/wilayah-administrasi?${params.toString()}`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -132,12 +130,10 @@ export const fetchPredictionData = async (city, month, year) => {
     if (city) params.append("kota", city);
     if (month) params.append("bulan", month);
     if (year) params.append("tahun", year);
-    params.append("limit", "10000");
+    params.append("limit", "100000");
 
-    // Ganti endpoint dari flood-point ke flood-area
-    const url = `${
-      import.meta.env.VITE_HOST_API
-    }/api/public/gis/flood-area?${params.toString()}`;
+    const url = `${import.meta.env.VITE_HOST_API
+      }/api/public/gis/flood-area?${params.toString()}`;
 
     const response = await fetch(url, {
       method: "GET",
@@ -165,7 +161,7 @@ export const fetchPredictionData = async (city, month, year) => {
       throw new Error("Expected an array of prediction features");
     }
 
-    // Filter untuk MultiPolygon geometry type (bukan Point lagi)
+    // Filter for MultiPolygon geometry type
     const validPredictionData = predictionFeatures.filter(
       (feature) =>
         feature.type === "Feature" &&
@@ -193,9 +189,8 @@ export const fetchLakeData = async (city) => {
     if (city) params.append("kota", city);
     params.append("limit", "10000");
 
-    const url = `${
-      import.meta.env.VITE_HOST_API
-    }/api/public/gis/danau?${params.toString()}`;
+    const url = `${import.meta.env.VITE_HOST_API
+      }/api/public/gis/danau?${params.toString()}`;
 
     const response = await fetch(url, {
       method: "GET",
