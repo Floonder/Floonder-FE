@@ -68,7 +68,7 @@ function Maps() {
     prediction: {
       city: "Kota Bandung",
       month: new Date().getMonth() + 1,
-      year: "2025",
+      year: String(new Date().getFullYear()),
     },
     lake: { city: "" },
     river: { city: "" },
@@ -739,10 +739,6 @@ function Maps() {
               value: properties.risk_score || "N/A",
             },
             {
-              label: "Risk Class",
-              value: properties.risk_class || "N/A",
-            },
-            {
               label: "Location",
               value: `${properties.NAMOBJ || properties.WADMKD}, ${properties.WADMKC}`,
             },
@@ -841,7 +837,7 @@ function Maps() {
             ? {
               city: "Kota Bandung",
               month: new Date().getMonth() + 1,
-              year: "2025",
+              year: String(new Date().getFullYear()),
             } // ← update ini
             : section === "river"
               ? { city: "" }
@@ -855,7 +851,7 @@ function Maps() {
       handleFetchPredictionData(
         "Kota Bandung",
         new Date().getMonth() + 1,
-        "2025"
+        String(new Date().getFullYear())
       ); // ← update ini
     } else if (section === "lake") {
       handleFetchLakeData("");
@@ -978,9 +974,11 @@ function Maps() {
                 Year
               </label>
               <select
-                value="2025"
-                enabled // mencegah user mengubah
-                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-white/30 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-transparent backdrop-blur-md cursor-not-allowed text-black placeholder-black/70"
+                value={filters.prediction.year}
+                onChange={(e) =>
+                  handleFilterChange("prediction", "year", e.target.value)
+                }
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-white/30 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md bg-transparent backdrop-blur-md text-black placeholder-black/70"
               >
                 {yearOptions.map((year) => (
                   <option
